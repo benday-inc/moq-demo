@@ -42,6 +42,13 @@ if (Test-Path $target) {
     }
 }
 
+# Warn if the SQL Server container isn't up; the console apps and integration
+# tests need it, the unit tests don't.
+$sqlRunning = (docker ps --filter 'name=^sql_server$' --format '{{.Names}}' 2>$null) -eq 'sql_server'
+if (-not $sqlRunning) {
+    Write-Warning "SQL Server container 'sql_server' is not running. Start it with ./start-sql-server-container.ps1 before demoing the console app."
+}
+
 $stages = Get-ChildItem -Path $repoRoot -Directory |
     Where-Object { $_.Name -match '^\d{2}-' -and (Test-Path (Join-Path $_.FullName 'before')) } |
     Sort-Object Name

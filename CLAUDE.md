@@ -35,9 +35,18 @@ instead of a profiler.
   (3.2.0). Several stages depend on additions being made to that library
   (see "Library dependencies" below); until those ship, write the plain-Moq
   version and leave a `// TODO(library): replace with X` comment.
-- Data access: EF Core with SQLite (file database under `./data/`, created
-  by `EnsureCreated()` at startup). No SQL Server dependency anywhere; the
-  demos must run on a Mac with only the `dotnet` CLI.
+- Data access: EF Core against SQL Server running in Docker. Start it with
+  `./start-sql-server-container.ps1` in the repo root (image
+  `mcr.microsoft.com/mssql/server:2025-latest`, container `sql_server`,
+  port 1433, SA password `Pa$$word`; `-Refresh` to pull and recreate).
+  Each stage's console app creates its database (`MoqDemo`) with
+  `EnsureCreated()` on startup. The connection string lives in ONE place per
+  stage, `appsettings.json` in the console app, so there's nothing to hunt
+  for on stage. A real SQL Server is deliberate: the talk's premise is that
+  the database dependency is expensive, and the integration tests should
+  feel that. Unit tests never touch it; if Docker isn't running, the console
+  app and integration tests fail and the unit tests still pass, which is
+  the point.
 - UI: a console app (`Benday.MoqDemo.ConsoleUI`) is the composition root. The
   2014 WinForms `MainForm` becomes a few menu options (create, load, save).
   The UI exists to show where real dependencies get wired; it is not the demo.
@@ -74,6 +83,7 @@ rewrite history. Git tags are not used for stages.
     after/       PersonToEntityAdapter tests with no mocks; IPersonValidator; TimeProvider
 shared/          nothing executable; slide-ready snippets and README text
 prepare-demo.ps1 copies every before/ into a dated scratch folder (see below)
+start-sql-server-container.ps1   starts the SQL Server container
 ```
 
 `01-first-test/before` is the untested inherited app described under
@@ -87,7 +97,8 @@ Live demos are never done in the stage folders. `prepare-demo.ps1` creates
 `dotnet build` on each copy so the first F5 on stage isn't a restore. Type
 into the copies; the stage folders stay pristine. `.gitignore` excludes
 `demo-????????/`, so scratch folders never get committed. Run it again the
-next day for a fresh set; delete old ones freely.
+next day for a fresh set; delete old ones freely. It also checks that the
+`sql_server` container is running and warns if not.
 
 Each `before` and `after` folder contains `Benday.MoqDemo.slnx` and:
 
@@ -101,7 +112,16 @@ Each `before` and `after` folder contains `Benday.MoqDemo.slnx` and:
 
 Every `before` and `after` must `dotnet build` and `dotnet test` green from
 its own folder before it is considered done (a `before` with no test project
-yet just has to build). A stage's README.md (one per stage folder, above
+yet just has to build). Integration tests that need SQL Server live in a
+separate `Benday.MoqDemo.IntegrationTests` project (from stage 04, when
+`SqlPersonRepository` exists) so `dotnet test` on the unit test project
+never needs Docker.
+
+**The ten-minute rule.** Each stage is one video, and each `before` to
+`after` diff must be typeable on camera in roughly ten minutes. If a stage's
+diff is bigger than that, split it into two stages rather than making the
+video longer. Keep every change minimal; move any scaffolding the demo
+should skip into the next stage's `before`. A stage's README.md (one per stage folder, above
 `before`/`after`) states in a few lines what changes between the two and
 which test proves it.
 
@@ -114,7 +134,7 @@ which test proves it.
 `PersonDataAccess` inline and calls it. `LoadById` does the same. Logging is
 `new Logger().WriteToLog(...)` inline. `PersonDataAccess` talks to EF Core
 directly. No interfaces, no constructor parameters, no tests. The console
-app works end to end against the SQLite file.
+app works end to end against SQL Server in the container.
 
 Deliberately ugly in the 2014 way: a `try/catch` in `Save` with two handlers,
 one for `SqlServerOutOfDiskSpaceException` (calls `FixDiskSpaceProblem()`,
