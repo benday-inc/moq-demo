@@ -426,3 +426,6 @@ FodyWeavers.xsd
 
 # Official VS Code C# Dev Kit Extension exclusion
 #*.lscache
+
+# Demo-day scratch folders created by prepare-demo.ps1
+demo-????????/
