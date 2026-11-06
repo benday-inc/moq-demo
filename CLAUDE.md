@@ -34,8 +34,8 @@ instead of a profiler.
 - Moq 4.x (4.21.0 or later)
 - `Benday.Common.Testing` 4.0.0 from NuGet. 4.0.0 auto-mocks abstract classes
   (`TimeProvider`) in both `CreateInstance<T>()` and `Build<T>()`, and throws
-  for concrete classes instead of mocking them. Later stages depend on further
-  additions to that library (see "Library dependencies" below).
+  for concrete classes instead of mocking them. That's the last library
+  change the demo needs (see "Library dependencies" below).
 - `Benday.EfCore` 11.0.11-alpha (and `Benday.EfCore.SqlServer`,
   `Benday.EfCore.Testing`) from stage 04 on. Stages 01-03 use raw EF Core:
   the inherited app doesn't get the nice library, or it stops being the bad
@@ -179,8 +179,8 @@ that creates a seam, then mocks through it.
    that `SaveAsync` on the data access was called once.
 
 Stages 01-03 stay in plain Moq permanently, string-based `Protected()` calls
-included: raw Moq is what those episodes teach, and the library helpers are
-the payoff in stage 06 on. Don't retrofit them when helpers ship. The one
+included: raw Moq is what those episodes teach, and `MockUtility` is the
+payoff from stage 06 on. Don't retrofit them. The one
 planned exception is after the talk: once `Ambient<T>` ships in
 `Benday.Common.Refactoring`, add a second test here showing the same thing
 done with `Ambient<PersonDataAccess>.Replace(...)` and no `virtual` at all;
@@ -205,9 +205,7 @@ The "mock it because you can't produce the condition" stage.
   `new Logger()` calls become `_logger.WriteToLog(ex)`. The console app
   constructs `new PersonManager(new Logger())`.
 - Tests verify *behavior*: `logger.Verify(x => x.WriteToLog(It.IsAny<Exception>()), Times.Once)`
-  in the exception tests, `Times.Never` in the happy-path test. When the
-  library's `ShouldHaveBeenCalledOnce` / `ShouldNotHaveBeenCalled` ship,
-  switch to those.
+  in the exception tests, `Times.Never` in the happy-path test.
 - The data access seam is still the stage-1 partial mock. That's deliberate:
   this stage is about injecting one dependency, not all of them.
 
@@ -283,8 +281,7 @@ service adapts, the repository stores. That replaces the book's line that
   objects, no mocks.
 - Show the gotcha on purpose: adding a `bool` dependency to an auto-mocked
   class makes every happy-path test fail because a Loose mock returns
-  `false`. Fix with a `Returns(true)` setup (or `SetupForAnyArgs(...).ReturnsTrue()`
-  when it ships). Contrast with `FakeValidatorStrategy<T>` from
+  `false`. Fix with a `Returns(true)` setup. Contrast with `FakeValidatorStrategy<T>` from
   `Benday.EfCore.Testing`, which defaults to `true`.
 
 At the end of stage 07 there are no `virtual` seams, no `[Seam]` attributes,
@@ -292,27 +289,26 @@ no `Ambient<T>` calls, and no `DateTime.UtcNow` anywhere in Business.
 
 ## Library dependencies
 
-These stages reference additions to `Benday.Common.Testing` (and the new
-`Benday.Common.Refactoring` package) that are planned in
-`/Users/benday/code/benday-inc/Benday.Common/TESTING-TODO.md`. This repo is
-also the integration test bed for those additions. When one ships:
+`Benday.Common.Testing` 4.0.0 is everything the demo needs: `MockUtility`,
+`MockCreationResult<T>`, and abstract-class auto-mocking for `TimeProvider`.
+Stages 04-07 use plain Moq plus `MockUtility`, with no `TODO(library)`
+markers.
 
-| Addition | Used in |
-| --- | --- |
-| Abstract-class auto-mocking (`TimeProvider`) | 06 (**shipped in 4.0.0**) |
-| `ShouldHaveBeenCalled*` verify extensions | 06, 07 |
-| `GetSingleCallArgument<TArg>` capture | 06 (assert on the saved entity and the logged exception) |
-| `SetupForAnyArgs` / `ReturnsTrue` | 07 |
-| `CreatePartial<T>` / `SetupProtected` | not used in the demo: 01-03 stay plain Moq (library-only) |
-| `Ambient<T>`, `[Seam]` (Refactoring package) | 01, second test; after the talk |
+The feature release planned in
+`/Users/benday/code/benday-inc/Benday.Common/TESTING-TODO.md` (verify
+wrappers, argument capture, `SetupForAnyArgs`, `ShouldThrowAsync`) was
+dropped before the talk (decided 2026-11-06): plain Moq already covers each
+one (`Verify` takes a failure message, `It.Is` and `Invocations` cover
+capture, `It.IsAny` is what the audience can use anywhere), and the real
+"tests get shorter" payoff is `MockUtility`, which already ships. Use
+xUnit's `Assert.ThrowsAsync` for async exceptions. Revisit after the talk,
+alongside `CreatePartial<T>` and `Ambient<T>`/`[Seam]` (the new
+`Benday.Common.Refactoring` package, which would add a second first-test
+technique to stage 01).
 
-Build order: stages 01-03 first in plain Moq, then a `Benday.Common.Testing`
-feature release shaped by what hurt in those stages, then stages 04-07. In
-stages 06-07, until an addition ships, write the plain-Moq form and mark it
-`// TODO(library): ...` so the swap is a grep away. Never add a
-`ProjectReference` to the Benday.Common repo from here; this repo consumes
-published packages only (a local NuGet feed is fine during development:
-`copy-packages-to-local-nuget.ps1` in that repo).
+Never add a `ProjectReference` to the Benday.Common repo from here; this
+repo consumes published packages only (a local NuGet feed is fine during
+development: `copy-packages-to-local-nuget.ps1` in that repo).
 
 ## Mapping to the talk and the videos
 
