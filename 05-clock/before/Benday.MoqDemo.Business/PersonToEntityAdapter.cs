@@ -3,6 +3,10 @@ using Benday.MoqDemo.DataAccess;
 
 namespace Benday.MoqDemo.Business;
 
+// Converts between Person (the domain object) and PersonEntity (the database
+// shape). It's pure logic with no dependencies, so its tests use real objects
+// and no mocks. AdapterBase (from Benday.EfCore) calls the two PerformAdapt
+// overrides below.
 public class PersonToEntityAdapter : AdapterBase<Person, PersonEntity>
 {
     // The database owns PersonEntity.Id, so it is never copied onto the entity.

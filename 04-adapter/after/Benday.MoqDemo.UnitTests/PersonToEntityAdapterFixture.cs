@@ -4,6 +4,9 @@ using Benday.MoqDemo.DataAccess;
 
 namespace Benday.MoqDemo.UnitTests;
 
+// Tests for PersonToEntityAdapter, with real objects and no mocks. It's pure
+// shape conversion, so there's nothing to mock. FakeValueGenerator fills the
+// source object with predictable values, so a field that isn't copied fails.
 public class PersonToEntityAdapterFixture : TestClassBase
 {
     public PersonToEntityAdapterFixture(ITestOutputHelper output) : base(output)
@@ -14,6 +17,7 @@ public class PersonToEntityAdapterFixture : TestClassBase
 
     private PersonToEntityAdapter SystemUnderTest => _systemUnderTest ??= new PersonToEntityAdapter();
 
+    // Every field should land on the entity.
     [Fact]
     public void Adapt_FromPersonToEntity_CopiesTheFields()
     {
@@ -30,6 +34,7 @@ public class PersonToEntityAdapterFixture : TestClassBase
         toValue.LastModified.ShouldEqual(fromValue.LastModified, "LastModified should be copied");
     }
 
+    // The database owns the entity's Id, so the adapter must leave it alone.
     [Fact]
     public void Adapt_FromPersonToEntity_DoesNotCopyTheId()
     {
@@ -41,6 +46,7 @@ public class PersonToEntityAdapterFixture : TestClassBase
         toValue.Id.ShouldEqual(42, "The database owns the entity's Id");
     }
 
+    // The other direction, including the Id.
     [Fact]
     public void Adapt_FromEntityToPerson_CopiesTheFieldsAndTheId()
     {

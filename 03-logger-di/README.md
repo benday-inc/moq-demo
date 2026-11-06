@@ -1,5 +1,24 @@
 # 03: Inject, then verify
 
+**The question this answers:** How do I verify a method was called with Moq?
+
+## Goal
+
+Prove that failures get logged, and that successes don't. Stage 02 couldn't
+check this, because `PersonManager` created its logger with `new` inside each
+catch block.
+
+## How
+
+Inject one dependency: extract an `ILogger` interface, pass it through
+`PersonManager`'s constructor, and have the console app pass the real
+`Logger`. Tests pass a `Mock<ILogger>` and check behavior with `Verify`:
+`Times.Once` with the exact exception that was thrown, and `Times.Never` on the
+success path. The data access stays on the stage 01 seam on purpose; this
+stage changes one dependency, not all of them.
+
+## What changes
+
 Stage 02 could prove the disk-space handler ran, but not that anything was
 logged, because `PersonManager` creates `new Logger()` inside each handler.
 

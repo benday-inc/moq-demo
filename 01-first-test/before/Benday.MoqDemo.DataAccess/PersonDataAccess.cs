@@ -1,5 +1,7 @@
 namespace Benday.MoqDemo.DataAccess;
 
+// Talks to SQL Server through EF Core. PersonManager creates one of these with
+// new, which is why PersonManager is hard to test.
 public class PersonDataAccess
 {
     public async Task<PersonEntity?> LoadPersonAsync(int id)

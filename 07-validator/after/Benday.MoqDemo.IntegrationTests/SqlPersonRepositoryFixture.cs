@@ -5,10 +5,14 @@ using Microsoft.Extensions.Configuration;
 
 namespace Benday.MoqDemo.IntegrationTests;
 
+// Integration tests: these really talk to SQL Server (the MoqDemoTests database).
+// They're slower and need SQL Server running, which is exactly the cost the unit
+// tests avoid by mocking the repository.
 public class SqlPersonRepositoryFixture : TestClassBase
 {
     public SqlPersonRepositoryFixture(ITestOutputHelper output) : base(output)
     {
+        // Point EF Core at the test database and create it if it doesn't exist.
         var config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
             .AddJsonFile("appsettings.json")

@@ -1,5 +1,34 @@
 # 06: Repository and the setup tax
 
+**The question this answers:** How do I unit test a service without hitting the database?
+
+## Goal
+
+Remove the last hard-wired dependency so `PersonManager` can be built with
+every collaborator mocked, and show how much setup code that takes with plain
+Moq versus `MockUtility`. This is the "the dependency is slow or needs
+infrastructure" reason to mock, plus the cure for the setup tax.
+
+## How
+
+Introduce a real repository (`SqlPersonRepository`, built on `Benday.EfCore`)
+behind `IAsyncReadableRepository<PersonEntity, int>`, and pass it through
+`PersonManager`'s constructor along with the logger and the clock. The
+partial mock, the seams and `PersonDataAccess` all go away. The unit tests now
+come in two versions with identical tests:
+
+- `PersonManagerMoqOnlyFixture.cs`: plain Moq, every mock created and passed
+  to the constructor by hand.
+- `PersonManagerFixture.cs`: `MockUtility.CreateInstance<PersonManager>()`
+  creates and wires every mock, and each test fetches only the ones it needs
+  with `GetRequiredMock<T>()`.
+
+One test swaps the repository mock for `InMemoryRepository`, a fake that
+really stores what you save: mocks for interactions, fakes for state. A new
+integration test project checks the real repository against SQL Server.
+
+## What changes
+
 Through stage 05, every test pays a setup tax: a hand-built partial mock,
 string-based `Protected()` calls, and a mock of a concrete class with
 `virtual` members. That's what it costs to test code that news up its own

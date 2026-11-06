@@ -3,10 +3,15 @@ using Benday.MoqDemo.DataAccess;
 
 namespace Benday.MoqDemo.Business;
 
+// The system under test. ILogger now comes in through the constructor, so tests
+// pass a Mock<ILogger> and verify what was logged. The data access is still
+// reached through the CreateDataAccess() seam.
 public class PersonManager
 {
     private readonly ILogger _logger;
 
+    // Constructor injection: PersonManager advertises what it depends on, and a
+    // test can pass mocks for any of it.
     public PersonManager(ILogger logger)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
@@ -30,12 +35,15 @@ public class PersonManager
                 await SaveExistingAsync(saveThis);
             }
         }
+        // Nothing in the app ever throws this, so no ordinary test can reach this
+        // handler. A mock that throws it can.
         catch (SqlServerOutOfDiskSpaceException ex)
         {
             FixDiskSpaceProblem();
             _logger.WriteToLog(ex);
             throw;
         }
+        // Any other failure: log it and rethrow.
         catch (Exception ex)
         {
             _logger.WriteToLog(ex);
@@ -49,6 +57,7 @@ public class PersonManager
     // Seam for tests; do not inline.
     protected virtual DateTime GetUtcNow() => DateTime.UtcNow;
 
+    // protected virtual so the partial mock in the tests can verify it was called.
     protected virtual void FixDiskSpaceProblem()
     {
         Console.WriteLine("Hey, somebody should really do something about that database. It's outta disk space.");
@@ -83,6 +92,8 @@ public class PersonManager
         await dataAccess.SavePersonAsync(entity);
     }
 
+    // Hand-copying fields between the two shapes. Stage 04 moves this into
+    // PersonToEntityAdapter, where it can be tested on its own.
     private static void CopyToEntity(Person fromValue, PersonEntity toValue)
     {
         toValue.FirstName = fromValue.FirstName;

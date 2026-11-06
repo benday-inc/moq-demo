@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Benday.MoqDemo.DataAccess;
 
+// EF Core's gateway to the Persons table in SQL Server.
 public class PersonDbContext : DbContext
 {
     // Set once at startup by the console app. Everything that news up a

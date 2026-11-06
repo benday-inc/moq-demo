@@ -2,6 +2,8 @@ using Benday.EfCore.DomainModels;
 
 namespace Benday.MoqDemo.Business;
 
+// The domain object the app works with. It knows nothing about the database.
+// DomainModelBase (from Benday.EfCore) supplies the Id property.
 public class Person : DomainModelBase
 {
     public string FirstName { get; set; } = string.Empty;

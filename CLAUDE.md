@@ -143,9 +143,13 @@ never needs Docker.
 `after` diff must be typeable on camera in roughly ten minutes. If a stage's
 diff is bigger than that, split it into two stages rather than making the
 video longer. Keep every change minimal; move any scaffolding the demo
-should skip into the next stage's `before`. A stage's README.md (one per stage folder, above
-`before`/`after`) states in a few lines what changes between the two and
-which test proves it.
+should skip into the next stage's `before`. A stage's README.md (one per
+stage folder, above `before`/`after`) opens with the search question the
+stage answers (the video title), a **Goal** section (what the demo is trying
+to achieve and why it matters) and a **How** section (the technique, in plain
+words), then **What changes** between `before` and `after` and which tests
+prove it. Write READMEs as if they'll be published: each one becomes the
+episode's companion blog post.
 
 ## The stages in detail
 
@@ -268,11 +272,13 @@ service adapts, the repository stores. That replaces the book's line that
 - `FixDiskSpaceProblem()` becomes private, so the disk-space test now asserts
   that the exception propagates and the logger was called once, with
   `ThrowsAsync` on the repository mock.
-- Tests: every test becomes `MockUtility.CreateInstance<PersonManager>()` and
-  configures only the mocks it cares about via `GetRequiredMock<T>()`;
-  `TimeProvider` is auto-mocked (that's what 4.0.0 added). This is the stage
-  where the arrange blocks visibly shrink; keep a copy of the stage-05
-  version of one test in the README for the before/after.
+- Tests come in two files with identical tests: `PersonManagerFixture.cs`
+  uses `MockUtility.CreateInstance<PersonManager>()` and configures only the
+  mocks each test cares about via `GetRequiredMock<T>()` (`TimeProvider` is
+  auto-mocked; that's what 4.0.0 added), and `PersonManagerMoqOnlyFixture.cs`
+  creates every mock with `new Mock<T>()` and passes `.Object` to the
+  constructor by hand. The pair is the setup-tax comparison. The README also
+  keeps the stage-05 partial-mock version of one test.
 - One test uses `InMemoryRepository<PersonEntity>` instead of a mock, to make
   the "mocks for interactions, fakes for state" point.
 
@@ -288,8 +294,11 @@ service adapts, the repository stores. That replaces the book's line that
   objects, no mocks.
 - Show the gotcha on purpose: adding a `bool` dependency to an auto-mocked
   class makes every happy-path test fail because a Loose mock returns
-  `false`. Fix with a `Returns(true)` setup. Contrast with `FakeValidatorStrategy<T>` from
-  `Benday.EfCore.Testing`, which defaults to `true`.
+  `false`. Fix with a `Returns(true)` default in each fixture. In the
+  Moq-only fixture the new constructor parameter fails to compile first,
+  then the same trap appears once the mock is passed in. Contrast with
+  `FakeValidatorStrategy<T>` from `Benday.EfCore.Testing`, which defaults to
+  `true`.
 
 At the end of stage 07 there are no `virtual` seams, no `[Seam]` attributes,
 no `Ambient<T>` calls, and no `DateTime.UtcNow` anywhere in Business.
@@ -319,24 +328,44 @@ development: `copy-packages-to-local-nuget.ps1` in that repo).
 
 ## Mapping to the talk and the videos
 
-| Stage | Talk segment (20 min) | Video |
-| --- | --- | --- |
-| 01 before | Segment 1 opener: "how would you test this?" | Ep. 1: The inherited app |
-| 01 | Mentioned in Q&A ("monolith with no DI") | Ep. 2: The first test |
-| 02 | Segment 2 + 4: the disk-space story and test | Ep. 3: Testing the impossible |
-| 03 | Segment 3: the five Moq moves | Ep. 4: Inject, then verify |
-| 04 | Segment 2: "don't mock the adapter" | Ep. 5: Don't mock the adapter |
-| 05 | Mentioned with the five moves | Ep. 6: Faking the clock |
-| 06 | Segment 5: `MockUtility` | Ep. 7: Repository and the setup tax |
-| 07 | Segment 5: the validator gotcha | Ep. 8: The validator and the bool trap |
+**The talk (VST08, VSLive Orlando, Nov 17 2026) is organized by testing
+problem**, not by stage: each segment is a kind of problem mocking solves,
+shown with the stage code that solves it. It starts at stage 02's story
+(stage 01's partial mock is Q&A material: "how do I do this in a monolith
+with no DI?"), and its code slides come from stages that use constructor
+injection, so the audience never has to learn `CallBase` or `Protected()`.
 
-The talk plan with timings and speaker notes is in the Claude Project doc
-"Mocking with Moq, 20-Minute Talk Plan". The deck carries code slides for
-stages 02, 03, 06 and 07, so it stands on its own without a live demo; the
-one live moment is the stage-07 `bool` gotcha, typed into a
-`prepare-demo.ps1` scratch folder. The rest is "it's on the playlist."
-The deck has a QR code for the YouTube playlist right after the five moves
-and again at the close.
+| Testing problem | Moq move | Code from |
+| --- | --- | --- |
+| The dependency is slow or needs infrastructure (the database) | `new Mock<T>`, `.Object`, `ReturnsAsync` | 06, Moq-only fixture |
+| You can't produce the condition (disk full) | `ThrowsAsync` | 06 |
+| You need to know a side effect happened (logging) | `Verify`, `Times.Once` / `Never` | 06 |
+| The input is nondeterministic (the clock) | `Setup(...).Returns(now)` | 05/06 |
+| Producing the condition is tedious and belongs in another test (validation) | `Returns(false)`; the Loose `false` trap, live | 07 |
+| The setup is repetitive (the wiring tax) | `MockUtility.CreateInstance` | 06, Moq-only next to `MockUtility` |
+| When not to mock (the adapter) | Real objects | 04 |
+
+The one live moment is the stage-07 `bool` gotcha, typed into a
+`prepare-demo.ps1` scratch folder, with code-slide backup. The deck has a QR
+code for the YouTube playlist mid-talk and again at the close. The original
+talk plan is the Claude Project doc "Mocking with Moq, 20-Minute Talk Plan";
+the deck itself lives outside this repo.
+
+**The videos are diagnostic:** each episode answers a question someone would
+search for, and the stage README opens with that question.
+
+| Ep. | Stage | Title as a search question |
+| --- | --- | --- |
+| 1-2 | 01 | How do I unit test code that creates its own dependencies? |
+| 3 | 02 | How do I test a catch block I can't trigger? |
+| 4 | 03 | How do I verify a method was called with Moq? |
+| 5 | 04 | Should I mock my mapping code? |
+| 6 | 05 | How do I unit test code that uses `DateTime.Now`? |
+| 7 | 06 | How do I unit test a service without hitting the database? |
+| 8 | 07 | Why does my Moq mock return false? |
+
+Stage 01 is legacy-code material (getting a foothold in code that creates its
+own dependencies), not Moq basics; frame episode 2 that way.
 
 ## Conventions for this repo
 
@@ -352,6 +381,20 @@ and again at the close.
   `Save_WhenPersonIsInvalid_DoesNotCallRepository`.
 - One assertion idea per test. Arrange/act/assert separated by blank lines,
   no comments saying "arrange".
+- **`MockUtility` and a Moq-only twin.** Wherever `MockUtility` fits (the
+  class under test is built through its constructor: stages 06 and 07), the
+  `after` has two fixtures with identical tests: `{Class}Fixture.cs` with
+  `MockUtility`, and `{Class}MoqOnlyFixture.cs` with plain Moq wired by hand.
+  A full, compiling file, never a commented-out block. Stages 01-05 test
+  through a partial mock, which `MockUtility` can't build, so they're
+  Moq-only already.
+- **Comment the code for the presenter and the audience.** Every class gets a
+  short header comment saying what it is and what it demonstrates in that
+  stage; every test gets a one-line comment naming the Moq move or idea it
+  shows; problem spots in the inherited code are labeled "Problem: ...".
+  Comments explain intent, not syntax, and stay identical across stages
+  wherever the code is identical, so `before`/`after` diffs show only real
+  changes.
 - Keep demo code small. Every line on screen costs time; if a method needs
   scrolling it needs splitting.
 - Leave the previous stage's version of a changed test in that stage's

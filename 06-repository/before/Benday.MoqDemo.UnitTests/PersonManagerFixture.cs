@@ -8,6 +8,9 @@ using Moq.Protected;
 
 namespace Benday.MoqDemo.UnitTests;
 
+// Tests for PersonManager. PersonManager creates its own data access, so these
+// tests use a partial mock: a Mock<PersonManager> that runs the real code
+// (CallBase = true) except for the protected virtual seams the tests override.
 public class PersonManagerFixture : TestClassBase
 {
     public PersonManagerFixture(ITestOutputHelper output) : base(output)
@@ -19,11 +22,15 @@ public class PersonManagerFixture : TestClassBase
     private Mock<PersonDataAccess>? _dataAccess;
     private Mock<PersonManager>? _partialMock;
 
+    // A plain mock of the interface, passed to PersonManager's constructor.
     private Mock<ILogger> Logger => _logger ??= new Mock<ILogger>();
 
+    // FakeTimeProvider: a ready-made fake clock from Microsoft, fixed at a known
+    // time. A test can also move it forward with Advance().
     private FakeTimeProvider Clock => _clock ??=
         new FakeTimeProvider(new DateTimeOffset(2026, 11, 17, 9, 0, 0, TimeSpan.Zero));
 
+    // A mock of a concrete class. It works because PersonDataAccess's methods are virtual.
     private Mock<PersonDataAccess> DataAccess => _dataAccess ??= new Mock<PersonDataAccess>();
 
     private Mock<PersonManager> PartialMock
@@ -32,8 +39,11 @@ public class PersonManagerFixture : TestClassBase
         {
             if (_partialMock == null)
             {
+                // CallBase = true: run PersonManager's real code unless a member is overridden.
                 _partialMock = new Mock<PersonManager>(Logger.Object, Clock) { CallBase = true };
 
+                // Override the protected CreateDataAccess() seam by name (it's protected, so a
+                // lambda can't reach it). Now every PersonDataAccess the real code asks for is the mock.
                 _partialMock.Protected()
                     .Setup<PersonDataAccess>("CreateDataAccess")
                     .Returns(DataAccess.Object);
@@ -43,8 +53,10 @@ public class PersonManagerFixture : TestClassBase
         }
     }
 
+    // .Object is the partial mock's PersonManager instance: real code plus overrides.
     private PersonManager SystemUnderTest => PartialMock.Object;
 
+    // The fake clock's time is the expected time.
     [Fact]
     public async Task SaveAsync_WhenPersonIsNew_SetsCreateDateAndLastModifiedToNow()
     {
@@ -57,6 +69,8 @@ public class PersonManagerFixture : TestClassBase
         person.LastModified.ShouldEqual(expected, "LastModified should come from the clock");
     }
 
+    // Advance() moves the fake clock forward a day between creating and saving,
+    // which a hand-rolled seam can't do.
     [Fact]
     public async Task SaveAsync_WhenPersonExists_UpdatesLastModifiedButNotCreateDate()
     {
@@ -71,6 +85,8 @@ public class PersonManagerFixture : TestClassBase
         person.LastModified.ShouldEqual(createDate.AddDays(1), "LastModified should move to now");
     }
 
+    // The Moq alternative to FakeTimeProvider: GetUtcNow() is virtual, so
+    // Mock<TimeProvider> works too. FakeTimeProvider is less setup and can move time.
     [Fact]
     public async Task SaveAsync_WithAMockedTimeProvider_SetsCreateDateToNow()
     {
@@ -86,6 +102,7 @@ public class PersonManagerFixture : TestClassBase
         person.CreateDate.ShouldEqual(expected.UtcDateTime, "CreateDate should come from the mocked clock");
     }
 
+    // Moq move: Verify(..., Times.Once) checks the real code called the mocked data access exactly once.
     [Fact]
     public async Task SaveAsync_WhenPersonIsNew_SavesThroughDataAccess()
     {
@@ -96,6 +113,8 @@ public class PersonManagerFixture : TestClassBase
         DataAccess.Verify(x => x.SavePersonAsync(It.IsAny<PersonEntity>()), Times.Once);
     }
 
+    // Moq move: ThrowsAsync makes the mocked data access fail with the exception
+    // nothing else can produce. Protected().Verify then checks the handler ran.
     [Fact]
     public async Task SaveAsync_WhenDatabaseIsOutOfDiskSpace_FixesDiskSpaceProblem()
     {
@@ -108,6 +127,7 @@ public class PersonManagerFixture : TestClassBase
         PartialMock.Protected().Verify("FixDiskSpaceProblem", Times.Once());
     }
 
+    // The same instance comes back out: the handler rethrows rather than wrapping it.
     [Fact]
     public async Task SaveAsync_WhenDatabaseIsOutOfDiskSpace_RethrowsTheException()
     {
@@ -121,6 +141,7 @@ public class PersonManagerFixture : TestClassBase
         actual.ShouldBeSameAs(expected, "SaveAsync should rethrow the original exception");
     }
 
+    // A different exception lands in the generic handler, so FixDiskSpaceProblem must not run: Times.Never.
     [Fact]
     public async Task SaveAsync_WhenSaveFailsForAnotherReason_DoesNotFixDiskSpaceProblem()
     {
@@ -133,6 +154,7 @@ public class PersonManagerFixture : TestClassBase
         PartialMock.Protected().Verify("FixDiskSpaceProblem", Times.Never());
     }
 
+    // Moq move: Times.Never checks something did NOT happen.
     [Fact]
     public async Task SaveAsync_WhenPersonIsNew_DoesNotLog()
     {
@@ -141,6 +163,7 @@ public class PersonManagerFixture : TestClassBase
         Logger.Verify(x => x.WriteToLog(It.IsAny<Exception>()), Times.Never);
     }
 
+    // Verify with a specific argument: the exception that was thrown is the one that got logged.
     [Fact]
     public async Task SaveAsync_WhenDatabaseIsOutOfDiskSpace_LogsTheException()
     {
@@ -154,6 +177,7 @@ public class PersonManagerFixture : TestClassBase
         Logger.Verify(x => x.WriteToLog(expected), Times.Once);
     }
 
+    // The generic catch block gets the same treatment with a different exception.
     [Fact]
     public async Task SaveAsync_WhenSaveFailsForAnotherReason_LogsTheException()
     {

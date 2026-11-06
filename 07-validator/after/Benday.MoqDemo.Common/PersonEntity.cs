@@ -2,6 +2,9 @@ using Benday.EfCore.Entities;
 
 namespace Benday.MoqDemo.Common;
 
+// The EF Core entity: the shape of the Persons table. EntityBase (from
+// Benday.EfCore) supplies the Id property. It lives in Common so Business can
+// use it without referencing DataAccess.
 public class PersonEntity : EntityBase
 {
     public string FirstName { get; set; } = string.Empty;

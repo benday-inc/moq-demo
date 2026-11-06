@@ -3,6 +3,8 @@ using Benday.MoqDemo.Business;
 using Benday.MoqDemo.DataAccess;
 using Microsoft.Extensions.Configuration;
 
+// The composition root: the one place that creates the real dependencies and
+// hands them to PersonManager. Tests hand it mocks instead.
 var config = new ConfigurationBuilder()
     .SetBasePath(AppContext.BaseDirectory)
     .AddJsonFile("appsettings.json")
@@ -11,11 +13,13 @@ var config = new ConfigurationBuilder()
 PersonDbContext.ConnectionString = config.GetConnectionString("MoqDemo")
     ?? throw new InvalidOperationException("Missing connection string 'MoqDemo'.");
 
+// Create the MoqDemo database on first run.
 using (var context = new PersonDbContext())
 {
     context.Database.EnsureCreated();
 }
 
+// Real dependencies: SQL Server, the console logger, the validation rules, the system clock.
 var manager = new PersonManager(
     new SqlPersonRepository(new PersonDbContext()), new Logger(), new PersonValidator(), TimeProvider.System);
 Person? current = null;

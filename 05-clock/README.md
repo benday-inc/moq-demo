@@ -1,5 +1,24 @@
 # 05: Faking the clock
 
+**The question this answers:** How do I unit test code that uses `DateTime.Now`?
+
+## Goal
+
+Make "now" something a test controls, using the clock abstraction .NET
+already ships, and get it out of the partial mock before stage 06 removes the
+partial mock entirely.
+
+## How
+
+Replace the `GetUtcNow()` seam with `TimeProvider` through the constructor.
+The console app passes `TimeProvider.System`. Tests pass a `FakeTimeProvider`
+(from `Microsoft.Extensions.TimeProvider.Testing`), which is fixed at a known
+time and can move forward with `Advance()`. One test shows the Moq
+alternative, `Mock<TimeProvider>`, which works because `GetUtcNow()` is
+virtual.
+
+## What changes
+
 Since stage 01, tests have pinned the time by overriding a
 `protected virtual GetUtcNow()` seam on a partial mock. Stage 06 removes the
 partial mock, and that seam would go with it. So the clock moves into the

@@ -2,6 +2,8 @@ using Benday.MoqDemo.Business;
 using Benday.MoqDemo.DataAccess;
 using Microsoft.Extensions.Configuration;
 
+// The console app. PersonManager creates its own dependencies in this version,
+// so all this file does is set the connection string and call PersonManager.
 var config = new ConfigurationBuilder()
     .SetBasePath(AppContext.BaseDirectory)
     .AddJsonFile("appsettings.json")
@@ -10,6 +12,7 @@ var config = new ConfigurationBuilder()
 PersonDbContext.ConnectionString = config.GetConnectionString("MoqDemo")
     ?? throw new InvalidOperationException("Missing connection string 'MoqDemo'.");
 
+// Create the MoqDemo database on first run.
 using (var context = new PersonDbContext())
 {
     context.Database.EnsureCreated();

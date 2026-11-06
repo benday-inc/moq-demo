@@ -4,14 +4,22 @@ using Benday.MoqDemo.Common;
 
 namespace Benday.MoqDemo.Business;
 
+// The system under test. Every dependency comes in through the constructor,
+// including the validator, so a test can make "is this person valid?" answer
+// whatever the test needs.
 public class PersonManager
 {
     private readonly IAsyncReadableRepository<PersonEntity, int> _repository;
     private readonly ILogger _logger;
     private readonly IValidatorStrategy<Person> _validator;
     private readonly TimeProvider _timeProvider;
+
+    // Created with new, not injected: the adapter is pure logic, so tests use the
+    // real one. A mocked adapter would silently copy nothing.
     private readonly PersonToEntityAdapter _adapter = new();
 
+    // Constructor injection: PersonManager advertises what it depends on, and a
+    // test can pass mocks for any of it.
     public PersonManager(
         IAsyncReadableRepository<PersonEntity, int> repository,
         ILogger logger,
@@ -31,6 +39,8 @@ public class PersonManager
 
     public async Task SaveAsync(Person saveThis)
     {
+        // The rules live in the validator; PersonManager only acts on the answer.
+        // Invalid means no save.
         if (_validator.IsValid(saveThis) == false)
         {
             throw new InvalidObjectException("Person is not valid.");
@@ -47,12 +57,15 @@ public class PersonManager
                 await SaveExistingAsync(saveThis);
             }
         }
+        // Nothing in the app ever throws this, so no ordinary test can reach this
+        // handler. A mock that throws it can.
         catch (SqlServerOutOfDiskSpaceException ex)
         {
             FixDiskSpaceProblem();
             _logger.WriteToLog(ex);
             throw;
         }
+        // Any other failure: log it and rethrow.
         catch (Exception ex)
         {
             _logger.WriteToLog(ex);
@@ -60,6 +73,8 @@ public class PersonManager
         }
     }
 
+    // Private again: with the partial mock gone, the disk-space tests check the
+    // rethrow and the log instead.
     private void FixDiskSpaceProblem()
     {
         Console.WriteLine("Hey, somebody should really do something about that database. It's outta disk space.");
@@ -67,6 +82,7 @@ public class PersonManager
 
     private async Task SaveNewAsync(Person saveThis)
     {
+        // The clock comes from TimeProvider, so a test can supply a fake or a mock.
         saveThis.CreateDate = _timeProvider.GetUtcNow().UtcDateTime;
         saveThis.LastModified = _timeProvider.GetUtcNow().UtcDateTime;
 

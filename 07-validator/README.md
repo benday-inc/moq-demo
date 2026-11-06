@@ -1,5 +1,31 @@
 # 07: The validator and the bool trap
 
+**The question this answers:** Why does my Moq mock return false?
+
+## Goal
+
+Add validation the testable way, and walk into the most common surprise in
+mocked tests on purpose. This is the "easier to test that way" reason to
+mock: instead of hand-building a person that breaks a rule, the test tells a
+mock validator to say no.
+
+## How
+
+Pass `IValidatorStrategy<Person>` through `PersonManager`'s constructor;
+`PersonManager` refuses to save when it returns `false`. The real rules live
+in `PersonValidator` and are tested on their own with real objects. Adding the
+dependency makes every existing `PersonManager` test fail, because a Loose
+mock returns `default(bool)`, which is `false`. The fix is one
+`Returns(true)` default in each fixture. Both fixtures show it:
+
+- `PersonManagerFixture.cs` (`MockUtility`): the tests compile and then fail,
+  because the new mock was created silently.
+- `PersonManagerMoqOnlyFixture.cs` (plain Moq): the constructor call stops
+  compiling first, which points you at the new dependency, and then the same
+  `false` trap appears once you pass the mock in.
+
+## What changes
+
 `PersonManager` saves anything it's given. This stage adds validation, and
 it springs the most common surprise in auto-mocked tests on purpose.
 

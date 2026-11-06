@@ -1,5 +1,6 @@
 namespace Benday.MoqDemo.Business;
 
+// The domain object the app works with. It knows nothing about the database.
 public class Person
 {
     public int Id { get; set; }

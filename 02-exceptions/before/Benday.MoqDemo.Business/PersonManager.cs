@@ -2,6 +2,9 @@ using Benday.MoqDemo.DataAccess;
 
 namespace Benday.MoqDemo.Business;
 
+// The system under test. CreateDataAccess() and GetUtcNow() are seams:
+// protected virtual methods a test can override with a partial mock (see
+// PersonManagerFixture). Everything else is the original code.
 public class PersonManager
 {
     public Person CreateNew()
@@ -22,12 +25,17 @@ public class PersonManager
                 await SaveExistingAsync(saveThis);
             }
         }
+        // Nothing in the app ever throws this, so no ordinary test can reach this
+        // handler. A mock that throws it can.
         catch (SqlServerOutOfDiskSpaceException ex)
         {
             FixDiskSpaceProblem();
+            // Problem: the logger is created right here, so a test can't check that
+            // anything was logged.
             new Logger().WriteToLog(ex);
             throw;
         }
+        // Any other failure: log it and rethrow.
         catch (Exception ex)
         {
             new Logger().WriteToLog(ex);
@@ -41,6 +49,7 @@ public class PersonManager
     // Seam for tests; do not inline.
     protected virtual DateTime GetUtcNow() => DateTime.UtcNow;
 
+    // The "very specific handling" for a full disk.
     private void FixDiskSpaceProblem()
     {
         Console.WriteLine("Hey, somebody should really do something about that database. It's outta disk space.");
@@ -75,6 +84,8 @@ public class PersonManager
         await dataAccess.SavePersonAsync(entity);
     }
 
+    // Hand-copying fields between the two shapes. Stage 04 moves this into
+    // PersonToEntityAdapter, where it can be tested on its own.
     private static void CopyToEntity(Person fromValue, PersonEntity toValue)
     {
         toValue.FirstName = fromValue.FirstName;

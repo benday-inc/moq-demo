@@ -1,5 +1,7 @@
 namespace Benday.MoqDemo.DataAccess;
 
+// The EF Core entity: the shape of the Persons table. PersonManager copies
+// fields between this and Person.
 public class PersonEntity
 {
     public int Id { get; set; }
