@@ -42,11 +42,16 @@ if (Test-Path $target) {
     }
 }
 
-# Warn if the SQL Server container isn't up; the console apps and integration
+# Warn if the SQL Server container isn't up (skipped without Docker, e.g. a Windows
+# box using its default SQL Server instance). The console apps and integration
 # tests need it, the unit tests don't.
-$sqlRunning = (docker ps --filter 'name=^sql_server$' --format '{{.Names}}' 2>$null) -eq 'sql_server'
-if (-not $sqlRunning) {
-    Write-Warning "SQL Server container 'sql_server' is not running. Start it with ./start-sql-server-container.ps1 before demoing the console app."
+if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
+    Write-Host "Docker not found; assuming a local SQL Server (default instance, sa login)."
+} else {
+    $sqlRunning = (docker ps --filter 'name=^sql_server$' --format '{{.Names}}' 2>$null) -eq 'sql_server'
+    if (-not $sqlRunning) {
+        Write-Warning "SQL Server container 'sql_server' is not running. Start it with ./start-sql-server-container.ps1 before demoing the console app, or ignore this if you're using a local SQL Server."
+    }
 }
 
 $stages = Get-ChildItem -Path $repoRoot -Directory |

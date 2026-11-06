@@ -44,10 +44,15 @@ instead of a profiler.
 - Async throughout, from `01-first-test/before` on: `SaveAsync`,
   `LoadByIdAsync`. That keeps `ThrowsAsync` honest in stage 02 and matches
   the async repository interface in stage 06.
-- Data access: EF Core against SQL Server running in Docker. Start it with
-  `./start-sql-server-container.ps1` in the repo root (image
-  `mcr.microsoft.com/mssql/server:2025-latest`, container `sql_server`,
-  port 1433, SA password `Pa$$word`; `-Refresh` to pull and recreate).
+- Data access: EF Core against SQL Server, login `sa` / `Pa$$word`,
+  connection strings `Server=localhost;...` with no port. On macOS that's
+  the Docker container: start it with `./start-sql-server-container.ps1` in
+  the repo root (image `mcr.microsoft.com/mssql/server:2025-latest`,
+  container `sql_server`, host port 1433, which must stay 1433 because the
+  connection strings name no port; `-Refresh` to pull and recreate). On
+  Windows it's the default SQL Server instance with the same `sa` login;
+  leaving the port off lets SqlClient use shared memory, so TCP/IP doesn't
+  have to be enabled.
   Each stage's console app creates its database (`MoqDemo`) with
   `EnsureCreated()` on startup. The connection string lives in ONE place per
   stage, `appsettings.json` in the console app, so there's nothing to hunt
@@ -55,9 +60,9 @@ instead of a profiler.
   `appsettings.json` pointing at a separate `MoqDemoTests` database, so test
   runs never touch the demo data. A real SQL Server is deliberate: the talk's premise is that
   the database dependency is expensive, and the integration tests should
-  feel that. Unit tests never touch it; if Docker isn't running, the console
-  app and integration tests fail and the unit tests still pass, which is
-  the point.
+  feel that. Unit tests never touch it; if SQL Server isn't reachable, the
+  console app and integration tests fail and the unit tests still pass,
+  which is the point.
 - UI: a console app (`Benday.MoqDemo.ConsoleUI`) is the composition root. The
   2014 WinForms `MainForm` becomes a few menu options (create, load, save).
   The UI exists to show where real dependencies get wired; it is not the demo.
