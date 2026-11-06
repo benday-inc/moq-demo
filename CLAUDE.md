@@ -51,7 +51,9 @@ instead of a profiler.
   Each stage's console app creates its database (`MoqDemo`) with
   `EnsureCreated()` on startup. The connection string lives in ONE place per
   stage, `appsettings.json` in the console app, so there's nothing to hunt
-  for on stage. A real SQL Server is deliberate: the talk's premise is that
+  for on stage. From stage 06, the integration test project has its own
+  `appsettings.json` pointing at a separate `MoqDemoTests` database, so test
+  runs never touch the demo data. A real SQL Server is deliberate: the talk's premise is that
   the database dependency is expensive, and the integration tests should
   feel that. Unit tests never touch it; if Docker isn't running, the console
   app and integration tests fail and the unit tests still pass, which is
