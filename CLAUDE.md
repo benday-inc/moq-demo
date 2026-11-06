@@ -218,17 +218,20 @@ the repository because `Benday.EfCore` repositories store entities: the
 service adapts, the repository stores. That replaces the book's line that
 "the service never sees an EF entity."
 
-- Add `Benday.EfCore`. `PersonEntity` derives from `EntityBase`; `Person`
-  derives from `DomainModelBase` (the adapter's constraints need both).
+- `before` already has the setup: `Benday.EfCore` referenced from Business
+  and DataAccess, `PersonEntity : EntityBase`, `Person : DomainModelBase`
+  (the adapter's constraints need both). `EntityBase` adds no mapped
+  columns, so the shared `MoqDemo` database keeps working.
 - Extract the hand-copying in `PersonManager` into
   `PersonToEntityAdapter : AdapterBase<Person, PersonEntity>` in Business.
 - `PersonManager` creates it with `new`. It is **not** injected: a mocked
   adapter silently copies nothing, which is the failure the talk warns
   about, and `CreateInstance` (4.0.0) refuses concrete constructor
   parameters anyway. Pure logic, so use the real one.
-- `PersonToEntityAdapterFixture` tests both directions and the new-vs-existing
-  Id rule with real objects and **no mocks**; use `FakeValueGenerator` from
-  `Benday.Common.Testing` to populate the source object.
+- `PersonToEntityAdapterFixture` tests both directions and the Id rule (the
+  database owns `PersonEntity.Id`, so Person-to-entity never copies it) with
+  real objects and **no mocks**; `FakeValueGenerator.Create<T>()` from
+  `Benday.Common.Testing` populates the source object.
 - `PersonManagerFixture` doesn't change; it still uses the partial mock.
 
 ### 05-clock (`after`)
