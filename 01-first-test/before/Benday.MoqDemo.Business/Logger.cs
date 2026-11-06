@@ -4,6 +4,6 @@ public class Logger
 {
     public void WriteToLog(Exception ex)
     {
-        Console.Error.WriteLine($"[{DateTime.UtcNow:O}] {ex.GetType().Name}: {ex.Message}");
+        Console.Error.WriteLine($"{ex.GetType().Name}: {ex.Message}");
     }
 }
