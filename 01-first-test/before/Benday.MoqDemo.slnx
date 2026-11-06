@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="Benday.MoqDemo.Business/Benday.MoqDemo.Business.csproj" />
+  <Project Path="Benday.MoqDemo.ConsoleUI/Benday.MoqDemo.ConsoleUI.csproj" />
+  <Project Path="Benday.MoqDemo.DataAccess/Benday.MoqDemo.DataAccess.csproj" />
+</Solution>
