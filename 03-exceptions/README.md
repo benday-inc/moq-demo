@@ -30,5 +30,4 @@ but nothing in the app ever throws one.
   handler gets the same treatment.
 
 `Logger` is still created with `new` inside the handlers, so these tests can't
-check that anything was logged. You'll see the log lines go by in the test
-output instead. Demo 04 fixes that.
+check that anything was logged. Demo 04 fixes that.
