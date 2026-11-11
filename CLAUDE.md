@@ -120,7 +120,9 @@ Live demos are never done in the stage folders. `prepare-demo.ps1` creates
 into the copies; the stage folders stay pristine. `.gitignore` excludes
 `demo-????????/`, so scratch folders never get committed. Run it again the
 next day for a fresh set; delete old ones freely. It also checks that the
-`sql_server` container is running and warns if not.
+`sql_server` container is running and warns if not. It also copies every
+`extras/<name>` folder into `demo-{yyyyMMdd}/extras/<name>/` and builds it,
+so the setup-tax demo is recorded from the scratch copy like everything else.
 
 Each `before` and `after` folder contains `Benday.MoqDemo.slnx` and:
 
