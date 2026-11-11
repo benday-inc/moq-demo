@@ -1,5 +1,5 @@
 using Benday.EfCore.Adapters;
-using Benday.MoqDemo.DataAccess;
+using Benday.MoqDemo.Common;
 
 namespace Benday.MoqDemo.Business;
 

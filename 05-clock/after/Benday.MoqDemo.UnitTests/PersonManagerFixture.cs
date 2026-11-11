@@ -1,139 +1,105 @@
+using Benday.Common.Interfaces;
 using Benday.Common.Testing;
+using Benday.EfCore.Testing.Fakes;
 using Benday.MoqDemo.Business;
 using Benday.MoqDemo.Common;
-using Benday.MoqDemo.DataAccess;
 using Microsoft.Extensions.Time.Testing;
 using Moq;
-using Moq.Protected;
 
 namespace Benday.MoqDemo.UnitTests;
 
-// Tests for PersonManager. PersonManager creates its own data access, so these
-// tests use a partial mock: a Mock<PersonManager> that runs the real code
-// (CallBase = true) except for the protected virtual seams the tests override.
+// Tests for PersonManager, written with plain Moq: every mock is created by
+// hand and passed to the constructor by hand. Nothing here touches SQL Server.
 public class PersonManagerFixture : TestClassBase
 {
     public PersonManagerFixture(ITestOutputHelper output) : base(output)
     {
     }
 
+    private Mock<IAsyncReadableRepository<PersonEntity, int>>? _repository;
     private Mock<ILogger>? _logger;
-    private FakeTimeProvider? _clock;
-    private Mock<PersonDataAccess>? _dataAccess;
-    private Mock<PersonManager>? _partialMock;
+    private Mock<TimeProvider>? _clock;
+    private PersonManager? _systemUnderTest;
 
-    // A plain mock of the interface, passed to PersonManager's constructor.
-    private Mock<ILogger> Logger => _logger ??= new Mock<ILogger>();
+    // One mock per constructor parameter. Mock<T> is the remote control you
+    // configure and verify; .Object is the fake that PersonManager receives.
+    private Mock<IAsyncReadableRepository<PersonEntity, int>> Repository => _repository ??= new();
 
-    // FakeTimeProvider: a ready-made fake clock from Microsoft, fixed at a known
-    // time. A test can also move it forward with Advance().
-    private FakeTimeProvider Clock => _clock ??=
-        new FakeTimeProvider(new DateTimeOffset(2026, 11, 17, 9, 0, 0, TimeSpan.Zero));
+    private Mock<ILogger> Logger => _logger ??= new();
 
-    // A mock of a concrete class. It works because PersonDataAccess's methods are virtual.
-    private Mock<PersonDataAccess> DataAccess => _dataAccess ??= new Mock<PersonDataAccess>();
+    // TimeProvider is an abstract class, and its GetUtcNow() is virtual, so Moq can fake it.
+    private Mock<TimeProvider> Clock => _clock ??= new();
 
-    private Mock<PersonManager> PartialMock
-    {
-        get
-        {
-            if (_partialMock == null)
-            {
-                // CallBase = true: run PersonManager's real code unless a member is overridden.
-                _partialMock = new Mock<PersonManager>(Logger.Object, Clock) { CallBase = true };
+    // The real PersonManager, built with stand-ins. Add a constructor parameter
+    // to PersonManager and this line stops compiling until you add another mock above.
+    private PersonManager SystemUnderTest => _systemUnderTest ??=
+        new PersonManager(Repository.Object, Logger.Object, Clock.Object);
 
-                // Override the protected CreateDataAccess() seam by name (it's protected, so a
-                // lambda can't reach it). Now every PersonDataAccess the real code asks for is the mock.
-                _partialMock.Protected()
-                    .Setup<PersonDataAccess>("CreateDataAccess")
-                    .Returns(DataAccess.Object);
-            }
+    private static readonly DateTimeOffset Now = new(2026, 11, 17, 9, 0, 0, TimeSpan.Zero);
 
-            return _partialMock;
-        }
-    }
-
-    // .Object is the partial mock's PersonManager instance: real code plus overrides.
-    private PersonManager SystemUnderTest => PartialMock.Object;
-
-    // The fake clock's time is the expected time.
+    // Moq move: Setup(...).ReturnsAsync(...) makes the mock answer a question.
+    // Here the "database" hands back person 1, and there is no database.
     [Fact]
-    public async Task SaveAsync_WhenPersonIsNew_SetsCreateDateAndLastModifiedToNow()
+    public async Task LoadByIdAsync_WhenPersonExists_ReturnsThePerson()
     {
-        var expected = Clock.GetUtcNow().UtcDateTime;
-        var person = new Person { FirstName = "Ada", LastName = "Lovelace" };
+        var entity = new PersonEntity { Id = 1, FirstName = TestConstants.FirstName };
+        Repository.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(entity);
 
-        await SystemUnderTest.SaveAsync(person);
+        var actual = await SystemUnderTest.LoadByIdAsync(1);
 
-        person.CreateDate.ShouldEqual(expected, "CreateDate should come from the clock");
-        person.LastModified.ShouldEqual(expected, "LastModified should come from the clock");
+        actual.ShouldNotBeNull("person 1 exists, so it should load");
+        actual!.FirstName.ShouldEqual(TestConstants.FirstName, "FirstName should come from the repository");
     }
 
-    // Advance() moves the fake clock forward a day between creating and saving,
-    // which a hand-rolled seam can't do.
+    // The same setup with a different answer: the "database" has no person 2.
+    [Fact]
+    public async Task LoadByIdAsync_WhenPersonDoesNotExist_ReturnsNull()
+    {
+        Repository.Setup(x => x.GetByIdAsync(2)).ReturnsAsync((PersonEntity?)null);
+
+        var actual = await SystemUnderTest.LoadByIdAsync(2);
+
+        actual.ShouldBeNull("there is no person 2");
+    }
+
+    // An update loads the person before saving it, so the mock hands one back.
+    // With the clock pinned, the test can check LastModified too.
     [Fact]
     public async Task SaveAsync_WhenPersonExists_UpdatesLastModifiedButNotCreateDate()
     {
-        var createDate = Clock.GetUtcNow().UtcDateTime;
+        var createDate = Now.UtcDateTime.AddDays(-1);
         var person = new Person { Id = 1, CreateDate = createDate };
-        DataAccess.Setup(x => x.LoadPersonAsync(1)).ReturnsAsync(new PersonEntity { Id = 1 });
-        Clock.Advance(TimeSpan.FromDays(1));
+        Repository.Setup(x => x.GetByIdAsync(1)).ReturnsAsync(new PersonEntity { Id = 1 });
+        Clock.Setup(x => x.GetUtcNow()).Returns(Now);
 
         await SystemUnderTest.SaveAsync(person);
 
         person.CreateDate.ShouldEqual(createDate, "CreateDate should not change on an update");
-        person.LastModified.ShouldEqual(createDate.AddDays(1), "LastModified should move to now");
+        person.LastModified.ShouldEqual(Now.UtcDateTime, "LastModified should move to now");
     }
 
-    // The Moq alternative to FakeTimeProvider: GetUtcNow() is virtual, so
-    // Mock<TimeProvider> works too. FakeTimeProvider is less setup and can move time.
+    // A fake instead of a mock: InMemoryRepository really stores what you save,
+    // so a save followed by a load works. Mocks for interactions, fakes for state.
     [Fact]
-    public async Task SaveAsync_WithAMockedTimeProvider_SetsCreateDateToNow()
+    public async Task LoadByIdAsync_AfterSaveAsync_ReturnsTheSavedPerson()
     {
-        var expected = new DateTimeOffset(2026, 11, 17, 9, 0, 0, TimeSpan.Zero);
-        var clock = new Mock<TimeProvider>();
-        clock.Setup(x => x.GetUtcNow()).Returns(expected);
-        var partialMock = new Mock<PersonManager>(Logger.Object, clock.Object) { CallBase = true };
-        partialMock.Protected().Setup<PersonDataAccess>("CreateDataAccess").Returns(DataAccess.Object);
-        var person = new Person();
+        var sut = new PersonManager(new InMemoryRepository<PersonEntity>(), Logger.Object, Clock.Object);
+        var saved = new Person { FirstName = TestConstants.FirstName, Notes = "saved in memory" };
+        await sut.SaveAsync(saved);
 
-        await partialMock.Object.SaveAsync(person);
+        var actual = await sut.LoadByIdAsync(saved.Id);
 
-        person.CreateDate.ShouldEqual(expected.UtcDateTime, "CreateDate should come from the mocked clock");
+        actual.ShouldNotBeNull("the saved person should load back");
+        actual!.Notes.ShouldEqual("saved in memory", "Notes should round-trip through the fake");
     }
 
-    // Moq move: Verify(..., Times.Once) checks the real code called the mocked data access exactly once.
-    [Fact]
-    public async Task SaveAsync_WhenPersonIsNew_SavesThroughDataAccess()
-    {
-        var person = new Person { FirstName = "Ada", LastName = "Lovelace" };
-
-        await SystemUnderTest.SaveAsync(person);
-
-        DataAccess.Verify(x => x.SavePersonAsync(It.IsAny<PersonEntity>()), Times.Once);
-    }
-
-    // Moq move: ThrowsAsync makes the mocked data access fail with the exception
-    // nothing else can produce. Protected().Verify then checks the handler ran.
-    [Fact]
-    public async Task SaveAsync_WhenDatabaseIsOutOfDiskSpace_FixesDiskSpaceProblem()
-    {
-        DataAccess.Setup(x => x.SavePersonAsync(It.IsAny<PersonEntity>()))
-            .ThrowsAsync(new SqlServerOutOfDiskSpaceException("No more room!"));
-
-        await Assert.ThrowsAsync<SqlServerOutOfDiskSpaceException>(
-            () => SystemUnderTest.SaveAsync(new Person()));
-
-        PartialMock.Protected().Verify("FixDiskSpaceProblem", Times.Once());
-    }
-
-    // The same instance comes back out: the handler rethrows rather than wrapping it.
+    // Moq move: ThrowsAsync produces a failure you can't produce for real.
+    // This one line replaces "start SQL Server and fill the disk with garbage."
     [Fact]
     public async Task SaveAsync_WhenDatabaseIsOutOfDiskSpace_RethrowsTheException()
     {
         var expected = new SqlServerOutOfDiskSpaceException("No more room!");
-        DataAccess.Setup(x => x.SavePersonAsync(It.IsAny<PersonEntity>()))
-            .ThrowsAsync(expected);
+        Repository.Setup(x => x.SaveAsync(It.IsAny<PersonEntity>())).ThrowsAsync(expected);
 
         var actual = await Assert.ThrowsAsync<SqlServerOutOfDiskSpaceException>(
             () => SystemUnderTest.SaveAsync(new Person()));
@@ -141,17 +107,26 @@ public class PersonManagerFixture : TestClassBase
         actual.ShouldBeSameAs(expected, "SaveAsync should rethrow the original exception");
     }
 
-    // A different exception lands in the generic handler, so FixDiskSpaceProblem must not run: Times.Never.
+    // The generic catch block gets the same treatment with a different exception.
     [Fact]
-    public async Task SaveAsync_WhenSaveFailsForAnotherReason_DoesNotFixDiskSpaceProblem()
+    public async Task SaveAsync_WhenSaveFailsForAnotherReason_RethrowsTheException()
     {
-        DataAccess.Setup(x => x.SavePersonAsync(It.IsAny<PersonEntity>()))
-            .ThrowsAsync(new InvalidOperationException("Something else broke."));
+        var expected = new InvalidOperationException("Something else broke.");
+        Repository.Setup(x => x.SaveAsync(It.IsAny<PersonEntity>())).ThrowsAsync(expected);
 
-        await Assert.ThrowsAsync<InvalidOperationException>(
+        var actual = await Assert.ThrowsAsync<InvalidOperationException>(
             () => SystemUnderTest.SaveAsync(new Person()));
 
-        PartialMock.Protected().Verify("FixDiskSpaceProblem", Times.Never());
+        actual.ShouldBeSameAs(expected, "SaveAsync should rethrow the original exception");
+    }
+
+    // Moq move: Verify(..., Times.Once) checks the call happened. This is what makes a stub a mock.
+    [Fact]
+    public async Task SaveAsync_WhenPersonIsNew_SavesThroughTheRepository()
+    {
+        await SystemUnderTest.SaveAsync(new Person());
+
+        Repository.Verify(x => x.SaveAsync(It.IsAny<PersonEntity>()), Times.Once);
     }
 
     // Moq move: Times.Never checks something did NOT happen.
@@ -168,8 +143,7 @@ public class PersonManagerFixture : TestClassBase
     public async Task SaveAsync_WhenDatabaseIsOutOfDiskSpace_LogsTheException()
     {
         var expected = new SqlServerOutOfDiskSpaceException("No more room!");
-        DataAccess.Setup(x => x.SavePersonAsync(It.IsAny<PersonEntity>()))
-            .ThrowsAsync(expected);
+        Repository.Setup(x => x.SaveAsync(It.IsAny<PersonEntity>())).ThrowsAsync(expected);
 
         await Assert.ThrowsAsync<SqlServerOutOfDiskSpaceException>(
             () => SystemUnderTest.SaveAsync(new Person()));
@@ -177,17 +151,45 @@ public class PersonManagerFixture : TestClassBase
         Logger.Verify(x => x.WriteToLog(expected), Times.Once);
     }
 
-    // The generic catch block gets the same treatment with a different exception.
+    // The generic catch block logs too.
     [Fact]
     public async Task SaveAsync_WhenSaveFailsForAnotherReason_LogsTheException()
     {
         var expected = new InvalidOperationException("Something else broke.");
-        DataAccess.Setup(x => x.SavePersonAsync(It.IsAny<PersonEntity>()))
-            .ThrowsAsync(expected);
+        Repository.Setup(x => x.SaveAsync(It.IsAny<PersonEntity>())).ThrowsAsync(expected);
 
         await Assert.ThrowsAsync<InvalidOperationException>(
             () => SystemUnderTest.SaveAsync(new Person()));
 
         Logger.Verify(x => x.WriteToLog(expected), Times.Once);
+    }
+
+    // Moq move: Setup(...).Returns(...) pins the clock, so the test knows what "now" is.
+    [Fact]
+    public async Task SaveAsync_WhenPersonIsNew_SetsCreateDateAndLastModifiedToNow()
+    {
+        Clock.Setup(x => x.GetUtcNow()).Returns(Now);
+        var person = new Person { FirstName = TestConstants.FirstName, LastName = TestConstants.LastName };
+
+        await SystemUnderTest.SaveAsync(person);
+
+        person.CreateDate.ShouldEqual(Now.UtcDateTime, "CreateDate should come from the clock");
+        person.LastModified.ShouldEqual(Now.UtcDateTime, "LastModified should come from the clock");
+    }
+
+    // FakeTimeProvider: Microsoft's ready-made fake clock. Unlike a mock, it can
+    // move: Advance() makes time pass between the two saves.
+    [Fact]
+    public async Task SaveAsync_WhenTimeMovesForward_UpdatesLastModified()
+    {
+        var clock = new FakeTimeProvider(Now);
+        var sut = new PersonManager(new InMemoryRepository<PersonEntity>(), Logger.Object, clock);
+        var person = new Person { FirstName = TestConstants.FirstName };
+        await sut.SaveAsync(person);
+
+        clock.Advance(TimeSpan.FromHours(1));
+        await sut.SaveAsync(person);
+
+        person.LastModified.ShouldEqual(Now.UtcDateTime.AddHours(1), "LastModified should follow the clock");
     }
 }

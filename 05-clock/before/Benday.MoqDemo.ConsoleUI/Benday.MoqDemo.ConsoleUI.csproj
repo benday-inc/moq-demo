@@ -7,6 +7,7 @@
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Benday.MoqDemo.Business\Benday.MoqDemo.Business.csproj" />
+    <ProjectReference Include="..\Benday.MoqDemo.DataAccess\Benday.MoqDemo.DataAccess.csproj" />
   </ItemGroup>
   <ItemGroup>
     <None Update="appsettings.json" CopyToOutputDirectory="PreserveNewest" />

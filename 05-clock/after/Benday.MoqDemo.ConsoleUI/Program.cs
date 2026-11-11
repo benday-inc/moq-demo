@@ -18,7 +18,9 @@ using (var context = new PersonDbContext())
     context.Database.EnsureCreated();
 }
 
-var manager = new PersonManager(new Logger(), TimeProvider.System);
+// Real dependencies: SQL Server, the console logger, the system clock.
+var manager = new PersonManager(
+    new SqlPersonRepository(new PersonDbContext()), new Logger(), TimeProvider.System);
 Person? current = null;
 
 while (true)

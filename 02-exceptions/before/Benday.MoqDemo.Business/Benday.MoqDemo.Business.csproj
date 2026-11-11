@@ -1,5 +1,0 @@
-<Project Sdk="Microsoft.NET.Sdk">
-  <ItemGroup>
-    <ProjectReference Include="..\Benday.MoqDemo.DataAccess\Benday.MoqDemo.DataAccess.csproj" />
-  </ItemGroup>
-</Project>

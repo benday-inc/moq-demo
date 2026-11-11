@@ -4,7 +4,8 @@
 
 .DESCRIPTION
     Creates ./demo-{yyyyMMdd}/ and copies each stage's "before" folder into it
-    as demo-{yyyyMMdd}/{stage}/, plus every extras/<name> folder as
+    as demo-{yyyyMMdd}/{stage}/, plus refactoring/before as
+    demo-{yyyyMMdd}/refactoring/ and every extras/<name> folder as
     demo-{yyyyMMdd}/extras/<name>/, then runs dotnet build in each copy so the
     first build on stage is warm. The stage folders themselves are never
     touched. demo-????????/ is gitignored.
@@ -55,8 +56,9 @@ if (-not (Get-Command docker -ErrorAction SilentlyContinue)) {
     }
 }
 
+# The numbered demos (NN-name), plus the standalone refactoring demo.
 $stages = Get-ChildItem -Path $repoRoot -Directory |
-    Where-Object { $_.Name -match '^\d{2}-' -and (Test-Path (Join-Path $_.FullName 'before')) } |
+    Where-Object { ($_.Name -match '^\d{2}-' -or $_.Name -eq 'refactoring') -and (Test-Path (Join-Path $_.FullName 'before')) } |
     Sort-Object Name
 
 if (-not $stages) {

@@ -1,13 +1,13 @@
+using Benday.Common.Interfaces;
 using Benday.MoqDemo.Common;
-using Benday.MoqDemo.DataAccess;
 
 namespace Benday.MoqDemo.Business;
 
-// The system under test. ILogger now comes in through the constructor, so tests
-// pass a Mock<ILogger> and verify what was logged. The data access is still
-// reached through the CreateDataAccess() seam.
+// The system under test. The repository and the logger come in through the
+// constructor, so a test can replace both. The clock is still DateTime.UtcNow.
 public class PersonManager
 {
+    private readonly IAsyncReadableRepository<PersonEntity, int> _repository;
     private readonly ILogger _logger;
 
     // Created with new, not injected: the adapter is pure logic, so tests use the
@@ -16,8 +16,11 @@ public class PersonManager
 
     // Constructor injection: PersonManager advertises what it depends on, and a
     // test can pass mocks for any of it.
-    public PersonManager(ILogger logger)
+    public PersonManager(
+        IAsyncReadableRepository<PersonEntity, int> repository,
+        ILogger logger)
     {
+        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -55,52 +58,41 @@ public class PersonManager
         }
     }
 
-    // Seam for tests; do not inline.
-    protected virtual PersonDataAccess CreateDataAccess() => new PersonDataAccess();
-
-    // Seam for tests; do not inline.
-    protected virtual DateTime GetUtcNow() => DateTime.UtcNow;
-
-    // protected virtual so the partial mock in the tests can verify it was called.
-    protected virtual void FixDiskSpaceProblem()
+    // The "very specific handling" for a full disk.
+    private void FixDiskSpaceProblem()
     {
         Console.WriteLine("Hey, somebody should really do something about that database. It's outta disk space.");
     }
 
     private async Task SaveNewAsync(Person saveThis)
     {
-        var dataAccess = CreateDataAccess();
-
-        saveThis.CreateDate = GetUtcNow();
-        saveThis.LastModified = GetUtcNow();
+        // Problem: the real clock. A test can't know what time this will be.
+        saveThis.CreateDate = DateTime.UtcNow;
+        saveThis.LastModified = DateTime.UtcNow;
 
         var entity = new PersonEntity();
         _adapter.Adapt(saveThis, entity);
 
-        await dataAccess.SavePersonAsync(entity);
+        await _repository.SaveAsync(entity);
 
         saveThis.Id = entity.Id;
     }
 
     private async Task SaveExistingAsync(Person saveThis)
     {
-        var dataAccess = CreateDataAccess();
-
-        var entity = await dataAccess.LoadPersonAsync(saveThis.Id)
+        var entity = await _repository.GetByIdAsync(saveThis.Id)
             ?? throw new InvalidOperationException("Unknown person.");
 
-        saveThis.LastModified = GetUtcNow();
+        saveThis.LastModified = DateTime.UtcNow;
 
         _adapter.Adapt(saveThis, entity);
 
-        await dataAccess.SavePersonAsync(entity);
+        await _repository.SaveAsync(entity);
     }
 
     public async Task<Person?> LoadByIdAsync(int id)
     {
-        var dataAccess = CreateDataAccess();
-
-        var entity = await dataAccess.LoadPersonAsync(id);
+        var entity = await _repository.GetByIdAsync(id);
 
         if (entity == null)
         {

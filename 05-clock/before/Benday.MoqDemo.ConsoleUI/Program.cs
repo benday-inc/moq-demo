@@ -18,7 +18,8 @@ using (var context = new PersonDbContext())
     context.Database.EnsureCreated();
 }
 
-var manager = new PersonManager(new Logger());
+// Real dependencies: SQL Server, the console logger.
+var manager = new PersonManager(new SqlPersonRepository(new PersonDbContext()), new Logger());
 Person? current = null;
 
 while (true)

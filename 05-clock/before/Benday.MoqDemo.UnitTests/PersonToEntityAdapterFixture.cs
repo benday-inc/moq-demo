@@ -1,6 +1,6 @@
 using Benday.Common.Testing;
 using Benday.MoqDemo.Business;
-using Benday.MoqDemo.DataAccess;
+using Benday.MoqDemo.Common;
 
 namespace Benday.MoqDemo.UnitTests;
 
