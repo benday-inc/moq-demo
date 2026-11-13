@@ -32,6 +32,10 @@ SQL Server, in the integration test project.
   exists in DataAccess but isn't used yet.
 - A new `Benday.MoqDemo.IntegrationTests` project round-trips it against SQL
   Server, in a separate `MoqDemoTests` database.
+- `PersonManagerIntegrationFixture`, in that same project, drives the
+  inherited `PersonManager` against SQL Server. It passes today, so it is the
+  safety net for the refactor, and it shows the cost the unit tests avoid:
+  SQL Server has to be running, and every test pays for a real round trip.
 - The unit test project references Moq and `Benday.EfCore.Testing`.
 
 **after** puts the database behind the interface:
@@ -54,6 +58,16 @@ The tests that prove it, in the new `PersonManagerFixture`:
   `InMemoryRepository<PersonEntity>` from `Benday.EfCore.Testing` instead of a
   mock. Mocks are for interactions, and fakes are for state.
 
-The integration tests (from `before`) need SQL Server:
-`SaveAsync_WhenEntityIsNew_AssignsAnId` and
+The integration tests (from `before`) need SQL Server. `SqlPersonRepositoryFixture`
+covers the real repository: `SaveAsync_WhenEntityIsNew_AssignsAnId` and
 `GetByIdAsync_AfterSaveAsync_ReturnsTheSavedValues`.
+`PersonManagerIntegrationFixture` covers `PersonManager` end to end:
+`SaveAsync_WhenPersonIsNew_AssignsAnId`,
+`LoadByIdAsync_AfterSaveAsync_ReturnsTheSavedPerson` and
+`SaveAsync_WhenPersonExists_DoesNotChangeCreateDate`. Two of those have the
+same names as unit tests in `PersonManagerFixture`: same behavior, one with a
+database and one without. The only line that changes in the integration
+fixture between `before` and `after` is the constructor call, from
+`new PersonManager()` to
+`new PersonManager(new SqlPersonRepository(new PersonDbContext()))`, the same
+change the console app makes.

@@ -111,6 +111,7 @@ extras/
     setup-tax/   standalone, no before/after: six-dependency class, plain Moq vs MockUtility
 prepare-demo.ps1 copies every before/ into a dated scratch folder (see below)
 start-sql-server-container.ps1   starts the SQL Server container
+.editorconfig    one file at the root (from `dotnet new editorconfig`); every demo folder and scratch folder inherits it
 ```
 
 **Solution files are named for the folder they're in**, so IDE title bars and
@@ -142,7 +143,7 @@ next day for a fresh set; delete old ones freely. It also checks that the
 | `Benday.MoqDemo.DataAccess` | EF Core `PersonDbContext`, `PersonDataAccess` (until 02 after deletes it), `SqlPersonRepository` (from 02 before). |
 | `Benday.MoqDemo.Common` | From 02 before: `PersonEntity`, so Business can talk to the repository without referencing DataAccess. From 04 after: `ILogger`. From 02 after on, Business and DataAccess both reference Common, never each other. |
 | `Benday.MoqDemo.UnitTests` | xUnit. `PersonManagerFixture.cs` (from 02 after) is the file that changes in every demo and is where the story is told. `TestConstants.cs` holds shared test values. |
-| `Benday.MoqDemo.IntegrationTests` | From 02 before. `SqlPersonRepositoryFixture` against a real SQL Server. Separate project so `dotnet test` on the unit tests never needs Docker. |
+| `Benday.MoqDemo.IntegrationTests` | From 02 before. `SqlPersonRepositoryFixture` (the real repository) and `PersonManagerIntegrationFixture` (`PersonManager` end to end) against a real SQL Server. The constructor call in `PersonManagerIntegrationFixture.CreatePersonManager()` grows with `PersonManager`'s constructor in every demo. Separate project so `dotnet test` on the unit tests never needs Docker. |
 
 Every `before` and `after` must `dotnet build` clean and `dotnet test` green
 on the unit test project from its own folder before it is considered done.
@@ -204,8 +205,10 @@ where Moq first appears.
 
 - `before` adds scaffolding: the Common project with `PersonEntity`,
   `SqlPersonRepository : EfCoreCrudRepositoryBase<PersonEntity, PersonDbContext>`
-  (unused), the integration test project, and Moq plus `Benday.EfCore.Testing`
-  in the unit tests.
+  (unused), the integration test project (`SqlPersonRepositoryFixture` plus
+  `PersonManagerIntegrationFixture`, which drives the inherited
+  `PersonManager` against SQL Server and is the safety net for the refactor),
+  and Moq plus `Benday.EfCore.Testing` in the unit tests.
 - `after`: `PersonManager` takes `IAsyncReadableRepository<PersonEntity, int>`
   (from `Benday.Common.Interfaces`). Use the library interface directly
   rather than a custom `IPersonRepository`, so `InMemoryRepository<PersonEntity>`
