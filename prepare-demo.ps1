@@ -6,9 +6,11 @@
     Creates ./demo-{yyyyMMdd}/ and copies each stage's "before" folder into it
     as demo-{yyyyMMdd}/{stage}/, plus refactoring/before as
     demo-{yyyyMMdd}/refactoring/ and every extras/<name> folder as
-    demo-{yyyyMMdd}/extras/<name>/, then runs dotnet build in each copy so the
-    first build on stage is warm. The stage folders themselves are never
-    touched. demo-????????/ is gitignored.
+    demo-{yyyyMMdd}/extras/<name>/, drops the repo's root .editorconfig into
+    each copy so it still applies when a copy is zipped and moved elsewhere,
+    then runs dotnet build in each copy so the first build on stage is warm.
+    The stage folders themselves are never touched. demo-????????/ is
+    gitignored.
 
 .PARAMETER Date
     Override the folder date (yyyyMMdd). Defaults to today.
@@ -89,9 +91,21 @@ function Copy-DemoTree([string]$src, [string]$dst) {
         }
 }
 
+# The repo's root .editorconfig covers every folder under the repo, but a copy
+# that gets zipped and moved to another machine loses it. Put one in each copy,
+# unless the source folder already has its own.
+$editorConfig = Join-Path $repoRoot '.editorconfig'
+function Copy-EditorConfig([string]$dst) {
+    $out = Join-Path $dst '.editorconfig'
+    if ((Test-Path $editorConfig) -and -not (Test-Path $out)) {
+        Copy-Item $editorConfig $out
+    }
+}
+
 foreach ($stage in $stages) {
     Write-Host "  $($stage.Name)/before -> demo-$Date/$($stage.Name)"
     Copy-DemoTree (Join-Path $stage.FullName 'before') (Join-Path $target $stage.Name)
+    Copy-EditorConfig (Join-Path $target $stage.Name)
 }
 
 # Extras (extras/<name>) are standalone demos with no before/after; copy each
@@ -103,6 +117,7 @@ if (Test-Path $extrasRoot) {
     foreach ($extra in $extras) {
         Write-Host "  extras/$($extra.Name) -> demo-$Date/extras/$($extra.Name)"
         Copy-DemoTree $extra.FullName (Join-Path $target 'extras' $extra.Name)
+        Copy-EditorConfig (Join-Path $target 'extras' $extra.Name)
     }
 }
 

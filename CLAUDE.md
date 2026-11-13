@@ -111,7 +111,7 @@ extras/
     setup-tax/   standalone, no before/after: six-dependency class, plain Moq vs MockUtility
 prepare-demo.ps1 copies every before/ into a dated scratch folder (see below)
 start-sql-server-container.ps1   starts the SQL Server container
-.editorconfig    one file at the root (from `dotnet new editorconfig`); every demo folder and scratch folder inherits it
+.editorconfig    one file at the root (from `dotnet new editorconfig`); every demo folder inherits it, and prepare-demo.ps1 copies it into each scratch stage so a zipped copy keeps it
 ```
 
 **Solution files are named for the folder they're in**, so IDE title bars and
