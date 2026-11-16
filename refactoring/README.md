@@ -3,7 +3,7 @@
 **The question this answers:** How do I unit test code that creates its own dependencies?
 
 This demo stands on its own. It's about refactoring legacy code, not about
-mocking, and the numbered demos (`01`-`06`) don't build on it or use its
+mocking, and the numbered demos (`01`-`07`) don't build on it or use its
 technique.
 
 ## Goal

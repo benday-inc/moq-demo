@@ -32,16 +32,20 @@ public class SqlPersonRepositoryFixture : TestClassBase
     [Fact]
     public async Task SaveAsync_WhenEntityIsNew_AssignsAnId()
     {
+        // arrange
         var entity = new PersonEntity { FirstName = TestConstants.FirstName, LastName = TestConstants.LastName };
 
+        // act
         await SystemUnderTest.SaveAsync(entity);
 
+        // assert
         entity.Id.ShouldBeGreaterThan(0, "SQL Server should assign the Id");
     }
 
     [Fact]
     public async Task GetByIdAsync_AfterSaveAsync_ReturnsTheSavedValues()
     {
+        // arrange
         var saved = new PersonEntity
         {
             FirstName = TestConstants.FirstName,
@@ -51,9 +55,13 @@ public class SqlPersonRepositoryFixture : TestClassBase
         await SystemUnderTest.SaveAsync(saved);
         using var readRepository = new SqlPersonRepository(new PersonDbContext());
 
+        // act
         var actual = await readRepository.GetByIdAsync(saved.Id);
 
+        // assert
         actual.ShouldNotBeNull("the saved person should load back");
-        actual!.Notes.ShouldEqual("integration", "Notes should round-trip through SQL Server");
+        actual.FirstName.ShouldEqual(TestConstants.FirstName, "FirstName should round-trip through SQL Server");
+        actual.LastName.ShouldEqual(TestConstants.LastName, "LastName should round-trip through SQL Server");
+        actual.Notes.ShouldEqual("integration", "Notes should round-trip through SQL Server");
     }
 }

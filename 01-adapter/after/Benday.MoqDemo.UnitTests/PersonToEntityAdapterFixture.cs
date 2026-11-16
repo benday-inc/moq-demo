@@ -21,11 +21,14 @@ public class PersonToEntityAdapterFixture : TestClassBase
     [Fact]
     public void Adapt_FromPersonToEntity_CopiesTheFields()
     {
+        // arrange
         var fromValue = FakeValueGenerator.Create<Person>();
         var toValue = new PersonEntity();
 
+        // act
         SystemUnderTest.Adapt(fromValue, toValue);
 
+        // assert
         toValue.FirstName.ShouldEqual(fromValue.FirstName, "FirstName should be copied");
         toValue.LastName.ShouldEqual(fromValue.LastName, "LastName should be copied");
         toValue.EmailAddress.ShouldEqual(fromValue.EmailAddress, "EmailAddress should be copied");
@@ -38,11 +41,14 @@ public class PersonToEntityAdapterFixture : TestClassBase
     [Fact]
     public void Adapt_FromPersonToEntity_DoesNotCopyTheId()
     {
+        // arrange
         var fromValue = FakeValueGenerator.Create<Person>();
         var toValue = new PersonEntity { Id = 42 };
 
+        // act
         SystemUnderTest.Adapt(fromValue, toValue);
 
+        // assert
         toValue.Id.ShouldEqual(42, "The database owns the entity's Id");
     }
 
@@ -50,11 +56,14 @@ public class PersonToEntityAdapterFixture : TestClassBase
     [Fact]
     public void Adapt_FromEntityToPerson_CopiesTheFieldsAndTheId()
     {
+        // arrange
         var fromValue = FakeValueGenerator.Create<PersonEntity>();
         var toValue = new Person();
 
+        // act
         SystemUnderTest.Adapt(fromValue, toValue);
 
+        // assert
         toValue.Id.ShouldEqual(fromValue.Id, "Id should be copied");
         toValue.FirstName.ShouldEqual(fromValue.FirstName, "FirstName should be copied");
         toValue.LastName.ShouldEqual(fromValue.LastName, "LastName should be copied");

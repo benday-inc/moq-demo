@@ -82,6 +82,9 @@ public class PersonManager
         var entity = await _repository.GetByIdAsync(saveThis.Id)
             ?? throw new InvalidOperationException("Unknown person.");
 
+        // The database owns CreateDate. The stored value wins over whatever the
+        // caller's copy says, so an update can't wipe it out.
+        saveThis.CreateDate = entity.CreateDate;
         saveThis.LastModified = DateTime.UtcNow;
 
         _adapter.Adapt(saveThis, entity);

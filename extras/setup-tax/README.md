@@ -2,7 +2,7 @@
 
 **The question this answers:** Why are my Moq test fixtures so wordy?
 
-This folder is not a stage. It sits outside the `01`-`06` before/after chain
+This folder is not a stage. It sits outside the `01`-`07` before/after chain
 (`prepare-demo.ps1` copies it as-is) and holds the six-dependency example from the
 VST08 talk's slides "Annoyance #1: It Gets Wordy" and "MockUtility: Name Only
 What You Need", so every line on those slides compiles and passes.
@@ -10,7 +10,7 @@ What You Need", so every line on those slides compiles and passes.
 ## Goal
 
 Show the cost of hand-wiring mocks when a class has enough dependencies for it
-to hurt. `PersonManager` in demos 05-06 has three or four, which is too few
+to hurt. `PersonManager` in demos 06-07 has three or four, which is too few
 to make the point.
 
 ## How

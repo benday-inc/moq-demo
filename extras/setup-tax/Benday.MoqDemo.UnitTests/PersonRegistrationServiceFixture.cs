@@ -23,10 +23,13 @@ public class PersonRegistrationServiceFixture : TestClassBase
     [Fact]
     public async Task RegisterAsync_WhenPersonIsNew_SendsWelcomeEmail()
     {
+        // arrange
         var person = new Person { EmailAddress = TestConstants.EmailAddress };
 
+        // act
         await SystemUnderTest.Instance.RegisterAsync(person);
 
+        // assert
         SystemUnderTest.GetRequiredMock<IEmailSender>()
             .Verify(x => x.SendWelcomeAsync(TestConstants.EmailAddress), Times.Once);
     }

@@ -34,10 +34,13 @@ public class PersonRegistrationServiceMoqOnlyFixture : TestClassBase
     [Fact]
     public async Task RegisterAsync_WhenPersonIsNew_SendsWelcomeEmail()
     {
+        // arrange
         var person = new Person { EmailAddress = TestConstants.EmailAddress };
 
+        // act
         await CreateSystemUnderTest().RegisterAsync(person);
 
+        // assert
         _emailSender.Verify(x => x.SendWelcomeAsync(TestConstants.EmailAddress), Times.Once);
     }
 }

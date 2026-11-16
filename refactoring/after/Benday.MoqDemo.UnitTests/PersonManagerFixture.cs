@@ -48,12 +48,15 @@ public class PersonManagerFixture : TestClassBase
     [Fact]
     public async Task SaveAsync_WhenPersonIsNew_SetsCreateDateAndLastModifiedToNow()
     {
+        // arrange
         var expected = new DateTime(2026, 11, 17, 9, 0, 0, DateTimeKind.Utc);
         PartialMock.Protected().Setup<DateTime>("GetUtcNow").Returns(expected);
         var person = new Person { FirstName = TestConstants.FirstName, LastName = TestConstants.LastName };
 
+        // act
         await SystemUnderTest.SaveAsync(person);
 
+        // assert
         person.CreateDate.ShouldEqual(expected, "CreateDate should come from the clock seam");
         person.LastModified.ShouldEqual(expected, "LastModified should come from the clock seam");
     }
@@ -62,10 +65,13 @@ public class PersonManagerFixture : TestClassBase
     [Fact]
     public async Task SaveAsync_WhenPersonIsNew_SavesThroughDataAccess()
     {
+        // arrange
         var person = new Person { FirstName = TestConstants.FirstName, LastName = TestConstants.LastName };
 
+        // act
         await SystemUnderTest.SaveAsync(person);
 
+        // assert
         DataAccess.Verify(x => x.SavePersonAsync(It.IsAny<PersonEntity>()), Times.Once);
     }
 }

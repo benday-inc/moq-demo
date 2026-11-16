@@ -49,41 +49,66 @@ public class PersonManagerIntegrationFixture : TestClassBase
     [Fact]
     public async Task SaveAsync_WhenPersonIsNew_AssignsAnId()
     {
+        // arrange
         var person = CreateValidPerson();
 
+        // act
         await SystemUnderTest.SaveAsync(person);
 
+        // assert
         person.Id.ShouldBeGreaterThan(0, "SQL Server should assign the Id");
+    }
+
+    [Fact]
+    public async Task SaveAsync_WhenPersonIsNew_PopulatesCreateDateAndLastModified()
+    {
+        // arrange
+        var person = CreateValidPerson();
+
+        // act
+        await SystemUnderTest.SaveAsync(person);
+
+        // assert
+        person.CreateDate.ShouldNotEqual(default, "CreateDate should be set on a new person");
+        person.LastModified.ShouldNotEqual(default, "LastModified should be set on a new person");
     }
 
     [Fact]
     public async Task LoadByIdAsync_AfterSaveAsync_ReturnsTheSavedPerson()
     {
+        // arrange
         var saved = CreateValidPerson();
         saved.Notes = "integration";
         await SystemUnderTest.SaveAsync(saved);
 
+        // act
         // A second PersonManager, so the load really goes to SQL Server instead
         // of coming back from anything the first one still has in memory.
         var actual = await CreatePersonManager().LoadByIdAsync(saved.Id);
 
+        // assert
         actual.ShouldNotBeNull("the saved person should load back");
-        actual!.Notes.ShouldEqual("integration", "Notes should round-trip through SQL Server");
+        actual.FirstName.ShouldEqual(TestConstants.FirstName, "FirstName should round-trip through SQL Server");
+        actual.LastName.ShouldEqual(TestConstants.LastName, "LastName should round-trip through SQL Server");
+        actual.Notes.ShouldEqual("integration", "Notes should round-trip through SQL Server");
     }
 
     [Fact]
     public async Task SaveAsync_WhenPersonExists_DoesNotChangeCreateDate()
     {
+        // arrange
         var person = CreateValidPerson();
         await SystemUnderTest.SaveAsync(person);
         var createDate = person.CreateDate;
-
         person.Notes = "updated";
+
+        // act
         await SystemUnderTest.SaveAsync(person);
 
+        // assert
         var actual = await CreatePersonManager().LoadByIdAsync(person.Id);
         actual.ShouldNotBeNull("the updated person should load back");
-        actual!.CreateDate.ShouldEqual(createDate, "CreateDate should not change on an update");
+        actual.CreateDate.ShouldEqual(createDate, "CreateDate should not change on an update");
         actual.Notes.ShouldEqual("updated", "Notes should be saved on an update");
     }
 }

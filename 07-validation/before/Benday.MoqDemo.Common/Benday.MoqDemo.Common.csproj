@@ -1,0 +1,5 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <PackageReference Include="Benday.EfCore" Version="11.0.11-alpha" />
+  </ItemGroup>
+</Project>
