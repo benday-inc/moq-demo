@@ -199,6 +199,7 @@ public class PersonManagerFixture(ITestOutputHelper output) : TestClassBase(outp
         var saved = CreateNewPerson();
         saved.Notes = TestConstants.Notes;
         await sut.SaveAsync(saved);
+        saved.Id.ShouldNotBeZero("the fake should assign an Id on save");
 
         // act
         var actual = await sut.LoadByIdAsync(saved.Id);
@@ -221,6 +222,7 @@ public class PersonManagerFixture(ITestOutputHelper output) : TestClassBase(outp
         var sut = new PersonManager(repository, Logger.Object, Clock.Object);
         var person = CreateNewPerson();
         await sut.SaveAsync(person);
+        var expectedId = person.Id;
         var createDate = person.CreateDate;
         person.Notes = TestConstants.Notes;
 
@@ -228,6 +230,7 @@ public class PersonManagerFixture(ITestOutputHelper output) : TestClassBase(outp
         await sut.SaveAsync(person);
 
         // assert
+        person.Id.ShouldEqual(expectedId, "the second save should keep the Id");
         var stored = repository.Items.ShouldHaveSingleElement("two saves of one person should leave one record");
         stored.Notes.ShouldEqual(TestConstants.Notes, "the update should be stored");
         stored.CreateDate.ShouldEqual(createDate, "CreateDate should not change on an update");
