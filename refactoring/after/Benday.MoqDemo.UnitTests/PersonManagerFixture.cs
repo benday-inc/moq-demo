@@ -9,35 +9,28 @@ namespace Benday.MoqDemo.UnitTests;
 // Tests for PersonManager. PersonManager creates its own data access, so these
 // tests use a partial mock: a Mock<PersonManager> that runs the real code
 // (CallBase = true) except for the protected virtual seams the tests override.
-public class PersonManagerFixture : TestClassBase
+public class PersonManagerFixture(ITestOutputHelper output) : TestClassBase(output)
 {
-    public PersonManagerFixture(ITestOutputHelper output) : base(output)
-    {
-    }
-
-    private Mock<PersonDataAccess>? _dataAccess;
-    private Mock<PersonManager>? _partialMock;
-
     // A mock of a concrete class. It works because PersonDataAccess's methods are virtual.
-    private Mock<PersonDataAccess> DataAccess => _dataAccess ??= new Mock<PersonDataAccess>();
+    private Mock<PersonDataAccess> DataAccess => field ??= new Mock<PersonDataAccess>();
 
     private Mock<PersonManager> PartialMock
     {
         get
         {
-            if (_partialMock == null)
+            if (field == null)
             {
                 // CallBase = true: run PersonManager's real code unless a member is overridden.
-                _partialMock = new Mock<PersonManager> { CallBase = true };
+                field = new Mock<PersonManager> { CallBase = true };
 
                 // Override the protected CreateDataAccess() seam by name (it's protected, so a
                 // lambda can't reach it). Now every PersonDataAccess the real code asks for is the mock.
-                _partialMock.Protected()
+                field.Protected()
                     .Setup<PersonDataAccess>("CreateDataAccess")
                     .Returns(DataAccess.Object);
             }
 
-            return _partialMock;
+            return field;
         }
     }
 

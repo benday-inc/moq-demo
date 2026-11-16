@@ -456,8 +456,7 @@ below is a proposal; Ben hasn't fixed it.
   configure the object (07's `Validator`, the MockUtility fixture's
   `SystemUnderTest`) uses a block body with `if (field == null) { field = ...; }`.
   The integration fixtures keep an explicit constructor because its body sets
-  the connection string. Applies from 02 after on; 01 and `refactoring` and
-  `extras` still use the older explicit-field form.
+  the connection string. Applies to every fixture in the repo.
 - **No constructor null checks.** Constructors assign their parameters
   (`_repository = repository;`), with no `?? throw new ArgumentNullException`.
   The non-nullable parameter type is the contract and the compiler enforces it

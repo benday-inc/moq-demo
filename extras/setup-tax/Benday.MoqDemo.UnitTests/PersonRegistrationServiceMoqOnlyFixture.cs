@@ -10,12 +10,8 @@ namespace Benday.MoqDemo.UnitTests;
 // dependencies, so plain Moq needs six Mock<T> fields and a constructor call
 // that passes every .Object, even though the test below cares about one.
 // PersonRegistrationServiceFixture has the same test with MockUtility.
-public class PersonRegistrationServiceMoqOnlyFixture : TestClassBase
+public class PersonRegistrationServiceMoqOnlyFixture(ITestOutputHelper output) : TestClassBase(output)
 {
-    public PersonRegistrationServiceMoqOnlyFixture(ITestOutputHelper output) : base(output)
-    {
-    }
-
     // Fields are safe here because xUnit creates a new fixture instance for every test.
     private readonly Mock<IAsyncReadableRepository<PersonEntity, int>> _repository = new();
     private readonly Mock<IDuplicateChecker> _duplicateChecker = new();

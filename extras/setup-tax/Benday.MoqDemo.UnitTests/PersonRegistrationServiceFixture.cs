@@ -8,16 +8,10 @@ namespace Benday.MoqDemo.UnitTests;
 // CreateInstance<T>() reads the constructor, creates a Moq mock for all six
 // dependencies, and builds the service. The test names only the mock it cares
 // about. Add a seventh dependency and this file doesn't change.
-public class PersonRegistrationServiceFixture : TestClassBase
+public class PersonRegistrationServiceFixture(ITestOutputHelper output) : TestClassBase(output)
 {
-    public PersonRegistrationServiceFixture(ITestOutputHelper output) : base(output)
-    {
-    }
-
-    private MockCreationResult<PersonRegistrationService>? _systemUnderTest;
-
     private MockCreationResult<PersonRegistrationService> SystemUnderTest =>
-        _systemUnderTest ??= MockUtility.CreateInstance<PersonRegistrationService>();
+        field ??= MockUtility.CreateInstance<PersonRegistrationService>();
 
     // MockUtility move: GetRequiredMock<T>() hands back the real Moq mock, verified with plain Moq.
     [Fact]
