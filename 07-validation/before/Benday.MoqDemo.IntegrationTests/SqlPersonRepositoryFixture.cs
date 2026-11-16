@@ -25,9 +25,7 @@ public class SqlPersonRepositoryFixture : TestClassBase
         context.Database.EnsureCreated();
     }
 
-    private SqlPersonRepository? _systemUnderTest;
-
-    private SqlPersonRepository SystemUnderTest => _systemUnderTest ??= new SqlPersonRepository(new PersonDbContext());
+    private SqlPersonRepository SystemUnderTest => field ??= new SqlPersonRepository(new PersonDbContext());
 
     [Fact]
     public async Task SaveAsync_WhenEntityIsNew_AssignsAnId()

@@ -12,18 +12,12 @@ namespace Benday.MoqDemo.UnitTests;
 // MockUtility.CreateInstance<PersonManager>() creates a mock for every
 // constructor parameter and builds PersonManager with them, so each test
 // configures only the mocks it cares about.
-public class PersonManagerMockUtilityFixture : TestClassBase
+public class PersonManagerMockUtilityFixture(ITestOutputHelper output) : TestClassBase(output)
 {
-    public PersonManagerMockUtilityFixture(ITestOutputHelper output) : base(output)
-    {
-    }
-
-    private MockCreationResult<PersonManager>? _systemUnderTest;
-
     // One line: MockUtility reads the constructor, mocks every parameter, and
     // builds PersonManager. Add a constructor parameter and this line doesn't change.
     private MockCreationResult<PersonManager> SystemUnderTest =>
-        _systemUnderTest ??= MockUtility.CreateInstance<PersonManager>();
+        field ??= MockUtility.CreateInstance<PersonManager>();
 
     // GetRequiredMock<T>() returns the mock MockUtility created for that constructor
     // parameter, and throws if PersonManager has no such parameter.

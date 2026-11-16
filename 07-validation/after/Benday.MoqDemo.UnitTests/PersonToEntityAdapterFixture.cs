@@ -7,15 +7,9 @@ namespace Benday.MoqDemo.UnitTests;
 // Tests for PersonToEntityAdapter, with real objects and no mocks. It's pure
 // shape conversion, so there's nothing to mock. FakeValueGenerator fills the
 // source object with predictable values, so a field that isn't copied fails.
-public class PersonToEntityAdapterFixture : TestClassBase
+public class PersonToEntityAdapterFixture(ITestOutputHelper output) : TestClassBase(output)
 {
-    public PersonToEntityAdapterFixture(ITestOutputHelper output) : base(output)
-    {
-    }
-
-    private PersonToEntityAdapter? _systemUnderTest;
-
-    private PersonToEntityAdapter SystemUnderTest => _systemUnderTest ??= new PersonToEntityAdapter();
+    private PersonToEntityAdapter SystemUnderTest => field ??= new PersonToEntityAdapter();
 
     // Every field should land on the entity.
     [Fact]

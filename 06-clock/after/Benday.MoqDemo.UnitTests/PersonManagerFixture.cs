@@ -10,29 +10,20 @@ namespace Benday.MoqDemo.UnitTests;
 
 // Tests for PersonManager, written with plain Moq: every mock is created by
 // hand and passed to the constructor by hand. Nothing here touches SQL Server.
-public class PersonManagerFixture : TestClassBase
+public class PersonManagerFixture(ITestOutputHelper output) : TestClassBase(output)
 {
-    public PersonManagerFixture(ITestOutputHelper output) : base(output)
-    {
-    }
-
-    private Mock<IAsyncReadableRepository<PersonEntity, int>>? _repository;
-    private Mock<ILogger>? _logger;
-    private Mock<TimeProvider>? _clock;
-    private PersonManager? _systemUnderTest;
-
     // One mock per constructor parameter. Mock<T> is the remote control you
     // configure and verify; .Object is the stand-in that PersonManager receives.
-    private Mock<IAsyncReadableRepository<PersonEntity, int>> Repository => _repository ??= new();
+    private Mock<IAsyncReadableRepository<PersonEntity, int>> Repository => field ??= new();
 
-    private Mock<ILogger> Logger => _logger ??= new();
+    private Mock<ILogger> Logger => field ??= new();
 
     // TimeProvider is an abstract class, and its GetUtcNow() is virtual, so Moq can fake it.
-    private Mock<TimeProvider> Clock => _clock ??= new();
+    private Mock<TimeProvider> Clock => field ??= new();
 
     // The real PersonManager, built with stand-ins. Add a constructor parameter
     // to PersonManager and this line stops compiling until you add another mock above.
-    private PersonManager SystemUnderTest => _systemUnderTest ??=
+    private PersonManager SystemUnderTest => field ??=
         new PersonManager(Repository.Object, Logger.Object, Clock.Object);
 
     private static readonly DateTimeOffset Now = new(2026, 11, 17, 9, 0, 0, TimeSpan.Zero);

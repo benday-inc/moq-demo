@@ -5,15 +5,9 @@ namespace Benday.MoqDemo.UnitTests;
 
 // Tests for the real validation rules, with real Person objects and no mocks.
 // PersonManagerFixture mocks the validator; this file proves the rules.
-public class PersonValidatorFixture : TestClassBase
+public class PersonValidatorFixture(ITestOutputHelper output) : TestClassBase(output)
 {
-    public PersonValidatorFixture(ITestOutputHelper output) : base(output)
-    {
-    }
-
-    private PersonValidator? _systemUnderTest;
-
-    private PersonValidator SystemUnderTest => _systemUnderTest ??= new PersonValidator();
+    private PersonValidator SystemUnderTest => field ??= new PersonValidator();
 
     // Start from a valid person, then break one thing per test.
     private static Person CreateValidPerson() => new()

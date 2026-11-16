@@ -26,10 +26,10 @@ public class PersonManager
         IValidatorStrategy<Person> validator,
         TimeProvider timeProvider)
     {
-        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _validator = validator ?? throw new ArgumentNullException(nameof(validator));
-        _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
+        _repository = repository;
+        _logger = logger;
+        _validator = validator;
+        _timeProvider = timeProvider;
     }
 
     public Person CreateNew()

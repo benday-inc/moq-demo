@@ -13,29 +13,23 @@ namespace Benday.MoqDemo.UnitTests;
 // MockUtility.CreateInstance<PersonManager>() creates a mock for every
 // constructor parameter and builds PersonManager with them, so each test
 // configures only the mocks it cares about.
-public class PersonManagerMockUtilityFixture : TestClassBase
+public class PersonManagerMockUtilityFixture(ITestOutputHelper output) : TestClassBase(output)
 {
-    public PersonManagerMockUtilityFixture(ITestOutputHelper output) : base(output)
-    {
-    }
-
-    private MockCreationResult<PersonManager>? _systemUnderTest;
-
     private MockCreationResult<PersonManager> SystemUnderTest
     {
         get
         {
-            if (_systemUnderTest == null)
+            if (field == null)
             {
-                _systemUnderTest = MockUtility.CreateInstance<PersonManager>();
+                field = MockUtility.CreateInstance<PersonManager>();
 
                 // A Loose mock returns false for bool, so every person would be invalid.
-                _systemUnderTest.GetRequiredMock<IValidatorStrategy<Person>>()
+                field.GetRequiredMock<IValidatorStrategy<Person>>()
                     .Setup(x => x.IsValid(It.IsAny<Person>()))
                     .Returns(true);
             }
 
-            return _systemUnderTest;
+            return field;
         }
     }
 

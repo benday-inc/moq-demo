@@ -27,12 +27,12 @@ public class PersonRegistrationService
         ILogger logger,
         TimeProvider timeProvider)
     {
-        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-        _duplicateChecker = duplicateChecker ?? throw new ArgumentNullException(nameof(duplicateChecker));
-        _emailSender = emailSender ?? throw new ArgumentNullException(nameof(emailSender));
-        _auditLog = auditLog ?? throw new ArgumentNullException(nameof(auditLog));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
+        _repository = repository;
+        _duplicateChecker = duplicateChecker;
+        _emailSender = emailSender;
+        _auditLog = auditLog;
+        _logger = logger;
+        _timeProvider = timeProvider;
     }
 
     // Saves a new person and sends the welcome email. A duplicate email address

@@ -446,9 +446,30 @@ below is a proposal; Ben hasn't fixed it.
   `actual.ShouldNotBeNull("...")` flow analysis knows `actual` is not null and
   the next line uses it directly. If a `!` seems necessary, the test is shaped
   wrong (assert not-null first).
+- **Fixtures use a primary constructor and the `field` keyword.** A fixture
+  with nothing to do at construction is declared
+  `public class PersonManagerFixture(ITestOutputHelper output) : TestClassBase(output)`,
+  and every lazily created mock or system under test is a property over the
+  compiler's backing field: `private Mock<ILogger> Logger => field ??= new();`,
+  `private PersonManager SystemUnderTest => field ??= new PersonManager(Repository.Object);`.
+  No `private Mock<ILogger>? _logger;` declarations. A getter that has to
+  configure the object (07's `Validator`, the MockUtility fixture's
+  `SystemUnderTest`) uses a block body with `if (field == null) { field = ...; }`.
+  The integration fixtures keep an explicit constructor because its body sets
+  the connection string. Applies from 02 after on; 01 and `refactoring` and
+  `extras` still use the older explicit-field form.
+- **No constructor null checks.** Constructors assign their parameters
+  (`_repository = repository;`), with no `?? throw new ArgumentNullException`.
+  The non-nullable parameter type is the contract and the compiler enforces it
+  at every call site in these solutions; a runtime guard against `null!` is
+  not something the demos defend against.
 - `dotnet test <project>` with no extra switches. `xunit.v3.mtp-v2` passes
   unknown switches such as `--nologo` through to the test host, which then
-  exits with code 5 and runs nothing.
+  exits with code 5 and runs nothing. Run it from inside the stage folder
+  (`cd 04-exceptions/after && dotnet test Benday.MoqDemo.UnitTests`): the
+  stage's `global.json` holds the `"test": { "runner": ... }` opt-in, and from
+  the repo root the .NET 10 SDK errors with "Testing with VSTest target is no
+  longer supported".
 - **Comment the code for the presenter and the audience.** Every class gets a
   short header comment saying what it is and what it demonstrates; every test
   gets a one-line comment naming the Moq move or idea it shows; problem spots

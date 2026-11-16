@@ -18,7 +18,7 @@ public class PersonManager
     // test can pass mocks for any of it.
     public PersonManager(IAsyncReadableRepository<PersonEntity, int> repository)
     {
-        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
+        _repository = repository;
     }
 
     public Person CreateNew()

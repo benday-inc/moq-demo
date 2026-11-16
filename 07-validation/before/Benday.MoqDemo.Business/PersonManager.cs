@@ -22,9 +22,9 @@ public class PersonManager
         ILogger logger,
         TimeProvider timeProvider)
     {
-        _repository = repository ?? throw new ArgumentNullException(nameof(repository));
-        _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _timeProvider = timeProvider ?? throw new ArgumentNullException(nameof(timeProvider));
+        _repository = repository;
+        _logger = logger;
+        _timeProvider = timeProvider;
     }
 
     public Person CreateNew()

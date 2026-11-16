@@ -9,21 +9,14 @@ namespace Benday.MoqDemo.UnitTests;
 
 // Tests for PersonManager, written with plain Moq: every mock is created by
 // hand and passed to the constructor by hand. Nothing here touches SQL Server.
-public class PersonManagerFixture : TestClassBase
+public class PersonManagerFixture(ITestOutputHelper output) : TestClassBase(output)
 {
-    public PersonManagerFixture(ITestOutputHelper output) : base(output)
-    {
-    }
-
-    private Mock<IAsyncReadableRepository<PersonEntity, int>>? _repository;
-    private PersonManager? _systemUnderTest;
-
     // One mock per constructor parameter. Mock<T> is the remote control you
     // configure and verify; .Object is the stand-in that PersonManager receives.
-    private Mock<IAsyncReadableRepository<PersonEntity, int>> Repository => _repository ??= new();
+    private Mock<IAsyncReadableRepository<PersonEntity, int>> Repository => field ??= new();
 
     // The real PersonManager, built with the stand-in.
-    private PersonManager SystemUnderTest => _systemUnderTest ??= new PersonManager(Repository.Object);
+    private PersonManager SystemUnderTest => field ??= new PersonManager(Repository.Object);
 
     // A person the app hasn't saved yet: Id is 0 and the dates are unset.
     private static Person CreateNewPerson() => new()

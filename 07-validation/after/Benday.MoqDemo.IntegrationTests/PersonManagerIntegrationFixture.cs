@@ -26,9 +26,7 @@ public class PersonManagerIntegrationFixture : TestClassBase
         context.Database.EnsureCreated();
     }
 
-    private PersonManager? _systemUnderTest;
-
-    private PersonManager SystemUnderTest => _systemUnderTest ??= CreatePersonManager();
+    private PersonManager SystemUnderTest => field ??= CreatePersonManager();
 
     // Real dependencies: SQL Server, the console logger, the validation rules, the system clock.
     private static PersonManager CreatePersonManager()
