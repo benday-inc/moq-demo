@@ -20,7 +20,7 @@ should happen, which here is that the original exception comes back out.
 `PersonManager.SaveAsync` has a handler for `SqlServerOutOfDiskSpaceException`,
 but nothing in the app ever throws one.
 
-**before** is demo 03's `after`, unchanged.
+**before** is demo 04's `after`, unchanged.
 
 **after** changes only the tests. No production code changes at all:
 
@@ -30,4 +30,4 @@ but nothing in the app ever throws one.
   handler gets the same treatment.
 
 `Logger` is still created with `new` inside the handlers, so these tests can't
-check that anything was logged. Demo 05 fixes that.
+check that anything was logged. Demo 06 fixes that.

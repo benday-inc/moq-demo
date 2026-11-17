@@ -20,7 +20,7 @@ pass it through `PersonManager`'s constructor. Then use `Verify`:
 
 ## What changes
 
-**before** is demo 04's `after`, unchanged.
+**before** is demo 05's `after`, unchanged.
 
 **after** injects the logger:
 

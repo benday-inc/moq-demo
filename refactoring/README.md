@@ -3,7 +3,7 @@
 **The question this answers:** How do I unit test code that creates its own dependencies?
 
 This demo stands on its own. It's about refactoring legacy code, not about
-mocking, and the numbered demos (`01`-`07`) don't build on it or use its
+mocking, and the numbered demos (`01`-`09`) don't build on it or use its
 technique.
 
 ## Goal
@@ -52,5 +52,5 @@ The tests that prove it:
 
 Take the `CreateDataAccess()` setup away and both tests fail with
 "The ConnectionString property has not been initialized": the real data
-access tried to reach SQL Server. Demo `02-data-access` removes that
+access tried to reach SQL Server. Demo `03-data-access` removes that
 dependency for good.

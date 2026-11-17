@@ -19,17 +19,17 @@ on macOS. Nothing here depends on building it. Port the *design* and the
 
 **Two separate stories** (restructured 2026-11-11):
 
-- **The mocking demos (`01`-`07`)** are about mocking. Each one is a testing
+- **The mocking demos (`01`-`09`)** are about mocking. Each one is a testing
   problem that a mock solves, and each one injects one more dependency
-  through `PersonManager`'s constructor (`03` is the exception: it adds no
-  dependency, it contrasts the mock from `02` with an in-memory fake). They use plain `Mock<T>` on
+  through `PersonManager`'s constructor (`04` is the exception: it adds no
+  dependency, it contrasts the mock from `03` with an in-memory fake). They use plain `Mock<T>` on
   interfaces from the first mock on. **No partial mocks, no `CallBase`, no
-  `Protected()`, no `virtual` seams anywhere in `01`-`07`.** That material
+  `Protected()`, no `virtual` seams anywhere in `01`-`09`.** That material
   cluttered the mocking story and confused viewers, so it was removed.
 - **The refactoring demo (`refactoring/`)** stands alone. It's the 2014
   "first test" story: an inherited app that creates its own dependencies,
   extract-and-override, and a partial mock. Its purpose is refactoring legacy
-  code, not mocking, and nothing in `01`-`07` builds on it.
+  code, not mocking, and nothing in `01`-`09` builds on it.
 
 ## Stack
 
@@ -43,7 +43,7 @@ on macOS. Nothing here depends on building it. Port the *design* and the
   for concrete classes instead of mocking them. That's the last library
   change the demo needs (see "Library dependencies" below).
 - `Benday.EfCore` 11.0.11-alpha (and `Benday.EfCore.SqlServer`,
-  `Benday.EfCore.Testing`) in demos `01`-`07` and `extras/`. The
+  `Benday.EfCore.Testing`) in demos `01`-`09` and `extras/`. The
   `refactoring/` demo uses raw EF Core: the inherited app doesn't get the
   nice library. The package is still prerelease, so restores need
   `--prerelease`; a stable release should be cut before the series ships.
@@ -60,7 +60,7 @@ on macOS. Nothing here depends on building it. Port the *design* and the
   Each console app creates its database (`MoqDemo`) with `EnsureCreated()` on
   startup. The connection string lives in ONE place per folder,
   `appsettings.json` in the console app, so there's nothing to hunt for on
-  stage. From demo 02, the integration test project has its own
+  stage. From demo 03, the integration test project has its own
   `appsettings.json` pointing at a separate `MoqDemoTests` database, so test
   runs never touch the demo data. A real SQL Server is deliberate: the talk's
   premise is that the database dependency is expensive, and the integration
@@ -90,22 +90,22 @@ Folder names say the **concept**, not the class that changes:
 01-adapter/
     before/      the inherited app: no tests, PersonManager creates everything it uses
     after/       PersonToEntityAdapter (AdapterBase) extracted; tested with no mocks
-02-data-access/
+03-data-access/
     before/
     after/       repository interface through the constructor; Mock<T>, .Object, ReturnsAsync, It.IsAny, Callback
-03-fake-repository/
+04-fake-repository/
     before/      adds the Benday.EfCore.Testing package as setup
     after/       InMemoryRepository<PersonEntity>: mocks for scripted answers, fakes for state; tests only
-04-exceptions/
+05-exceptions/
     before/
     after/       ThrowsAsync; tests only, no production change
-05-verification/
+06-verification/
     before/
     after/       ILogger through the constructor; Verify, Times.Once / Never
-06-clock/
+07-clock/
     before/
     after/       TimeProvider through the constructor; Mock<TimeProvider> and FakeTimeProvider
-07-validation/
+09-validation/
     before/      adds the MockUtility twin fixture as setup
     after/       IValidatorStrategy<Person>; the Loose-mock bool gotcha
 refactoring/     standalone: extract-and-override + partial mock (the 2014 "first test")
@@ -119,8 +119,8 @@ start-sql-server-container.ps1   starts the SQL Server container
 ```
 
 **Solution files are named for the folder they're in**, so IDE title bars and
-recent-file lists tell them apart: `Benday.MoqDemo-04-exceptions-before.slnx`,
-`Benday.MoqDemo-04-exceptions-after.slnx`,
+recent-file lists tell them apart: `Benday.MoqDemo-05-exceptions-before.slnx`,
+`Benday.MoqDemo-05-exceptions-after.slnx`,
 `Benday.MoqDemo-refactoring-before.slnx`, `Benday.MoqDemo-setup-tax.slnx`.
 Project names and namespaces do **not** carry the demo name; they are
 `Benday.MoqDemo.*` everywhere, so code on slides never changes.
@@ -129,7 +129,7 @@ Project names and namespaces do **not** carry the demo name; they are
 
 Live demos are never done in the demo folders. `prepare-demo.ps1` creates
 `./demo-{yyyyMMdd}/` and copies each numbered demo's `before` folder into it
-as `demo-{yyyyMMdd}/01-adapter/`, `.../02-data-access/`, and so on, plus
+as `demo-{yyyyMMdd}/01-adapter/`, `.../03-data-access/`, and so on, plus
 `refactoring/before` as `demo-{yyyyMMdd}/refactoring/` and every
 `extras/<name>` folder as `demo-{yyyyMMdd}/extras/<name>/`, then runs
 `dotnet build` on each copy so the first F5 on stage isn't a restore. Type
@@ -143,11 +143,11 @@ next day for a fresh set; delete old ones freely. It also checks that the
 | Project | Role |
 | --- | --- |
 | `Benday.MoqDemo.ConsoleUI` | Composition root. Constructs `PersonManager` with real dependencies. |
-| `Benday.MoqDemo.Business` | `Person`, `PersonManager` (the system under test throughout), `Logger`, `SqlServerOutOfDiskSpaceException`, `PersonToEntityAdapter` (01 after), `PersonValidator` (07). |
-| `Benday.MoqDemo.DataAccess` | EF Core `PersonDbContext`, `PersonDataAccess` (until 02 after deletes it), `SqlPersonRepository` (from 02 before). |
-| `Benday.MoqDemo.Common` | From 02 before: `PersonEntity`, so Business can talk to the repository without referencing DataAccess. From 05 after: `ILogger`. From 02 after on, Business and DataAccess both reference Common, never each other. |
-| `Benday.MoqDemo.UnitTests` | xUnit. `PersonManagerFixture.cs` (from 02 after) is the file that changes in every demo and is where the story is told. `TestConstants.cs` holds shared test values. |
-| `Benday.MoqDemo.IntegrationTests` | From 02 before. `SqlPersonRepositoryFixture` (the real repository) and `PersonManagerIntegrationFixture` (`PersonManager` end to end) against a real SQL Server. The constructor call in `PersonManagerIntegrationFixture.CreatePersonManager()` grows with `PersonManager`'s constructor in every demo. Separate project so `dotnet test` on the unit tests never needs Docker. |
+| `Benday.MoqDemo.Business` | `Person`, `PersonManager` (the system under test throughout), `Logger`, `SqlServerOutOfDiskSpaceException`, `PersonToEntityAdapter` (01 after), `PersonValidator` (09). |
+| `Benday.MoqDemo.DataAccess` | EF Core `PersonDbContext`, `PersonDataAccess` (until 03 after deletes it), `SqlPersonRepository` (from 03 before). |
+| `Benday.MoqDemo.Common` | From 03 before: `PersonEntity`, so Business can talk to the repository without referencing DataAccess. From 06 after: `ILogger`. From 03 after on, Business and DataAccess both reference Common, never each other. |
+| `Benday.MoqDemo.UnitTests` | xUnit. `PersonManagerFixture.cs` (from 03 after) is the file that changes in every demo and is where the story is told. `TestConstants.cs` holds shared test values. |
+| `Benday.MoqDemo.IntegrationTests` | From 03 before. `SqlPersonRepositoryFixture` (the real repository) and `PersonManagerIntegrationFixture` (`PersonManager` end to end) against a real SQL Server. The constructor call in `PersonManagerIntegrationFixture.CreatePersonManager()` grows with `PersonManager`'s constructor in every demo. Separate project so `dotnet test` on the unit tests never needs Docker. |
 
 Every `before` and `after` must `dotnet build` clean and `dotnet test` green
 on the unit test project from its own folder before it is considered done.
@@ -170,9 +170,9 @@ blog post.
 ## The demos in detail
 
 `PersonManager`'s constructor grows by one parameter per demo:
-`()` in 01, `(repository)` from 02, `(repository, logger)` from 05,
-`(repository, logger, timeProvider)` from 06, and
-`(repository, logger, validator, timeProvider)` in 07 after. Demo 03 adds
+`()` in 01, `(repository)` from 03, `(repository, logger)` from 06,
+`(repository, logger, timeProvider)` from 07, and
+`(repository, logger, validator, timeProvider)` in 09 after. Demo 04 adds
 nothing to the constructor.
 
 ### 01-adapter
@@ -203,7 +203,7 @@ a repository interface in demo 02.
   real objects and **no mocks**; `FakeValueGenerator.Create<T>()` populates
   the source object.
 
-### 02-data-access
+### 03-data-access
 
 The "infrastructure dependency" demo, and Part 2 of the two-parter. This is
 where Moq first appears.
@@ -213,8 +213,8 @@ where Moq first appears.
   (unused), the integration test project (`SqlPersonRepositoryFixture` plus
   `PersonManagerIntegrationFixture`, which drives the inherited
   `PersonManager` against SQL Server and is the safety net for the refactor),
-  and Moq in the unit tests. Only Moq: the fake library arrives in 03, so
-  nothing in 02 can discover it early.
+  and Moq in the unit tests. Only Moq: the fake library arrives in 04, so
+  nothing in 03 can discover it early.
 - `after`: `PersonManager` takes `IAsyncReadableRepository<PersonEntity, int>`
   (from `Benday.Common.Interfaces`). Use the library interface directly
   rather than a custom `IPersonRepository`, so `InMemoryRepository<PersonEntity>`
@@ -238,14 +238,14 @@ where Moq first appears.
   both dates on the `Person` and the entity; update keeps the stored
   `CreateDate`; update of an unknown Id throws. The logger and clock are
   still inline, so the date tests check that the dates were set, not what
-  they were set to; 06 pins them.
+  they were set to; 07 pins them.
 
-### 03-fake-repository
+### 04-fake-repository
 
 The "mock or fake?" demo. Tests only; no production change. It's the
 `InMemoryRepository` episode, and it exists to say when Moq is the wrong tool.
 
-- `before` is 02's `after` plus the `Benday.EfCore.Testing` package.
+- `before` is 03's `after` plus the `Benday.EfCore.Testing` package.
 - A `Mock<T>` is a scripted answer with no memory; a fake is a working
   implementation with a shortcut. Save-then-load with a mock needs a
   `Callback` to capture and stamp an Id plus a second `Setup` to hand it back
@@ -260,7 +260,7 @@ The "mock or fake?" demo. Tests only; no production change. It's the
   produce (null, an exception, a time, "invalid"); fake when you need state.
   Verify behavior with a mock, verify data with a fake.
 
-### 04-exceptions
+### 05-exceptions
 
 The "you can't produce the condition" demo. Tests only; no production change.
 
@@ -272,7 +272,7 @@ The "you can't produce the condition" demo. Tests only; no production change.
 - Speaker line this demo exists for: "the only non-mock way to test this is a
   utility that starts SQL Server and fills the disk with garbage."
 
-### 05-verification
+### 06-verification
 
 The "interactions" demo: did it call the right stuff?
 
@@ -283,7 +283,7 @@ The "interactions" demo: did it call the right stuff?
   logger for the happy path, and `Verify` with the specific exception in both
   failure tests.
 
-### 06-clock
+### 07-clock
 
 The "data scenario" demo.
 
@@ -298,7 +298,7 @@ The "data scenario" demo.
   `..._SetsCreateDateAndLastModifiedToNow`, now that the clock can be pinned
   and the tests can check exact values on the `Person` and the saved entity.
 
-### 07-validation
+### 09-validation
 
 The "not my circus, not my monkeys" demo, and the talk's one live moment.
 
@@ -316,7 +316,7 @@ The "not my circus, not my monkeys" demo, and the talk's one live moment.
   `FakeValidatorStrategy<T>` from `Benday.EfCore.Testing`, which defaults to
   `true`.
 
-At the end of 07 there is no `DateTime.UtcNow` anywhere in Business and
+At the end of 09 there is no `DateTime.UtcNow` anywhere in Business and
 `PersonManager` creates none of its own dependencies except the adapter.
 
 ### refactoring (standalone)
@@ -335,7 +335,7 @@ that creates a seam, then mocks through it.
   talk, once `Ambient<T>` ships in `Benday.Common.Refactoring`, add a second
   test here showing the same thing with `Ambient<PersonDataAccess>.Replace(...)`
   and no `virtual` at all; keep both so the two techniques can be compared.
-- Do not copy its techniques into `01`-`07`.
+- Do not copy its techniques into `01`-`09`.
 
 ### extras/setup-tax (standalone)
 
@@ -376,16 +376,16 @@ problem**, and the demo folders now follow the same order as the deck's
 
 | Deck problem | Moq move | Demo |
 | --- | --- | --- |
-| Infrastructure Dependencies (the database) | `new Mock<T>`, `.Object`, `ReturnsAsync`, `It.IsAny`, `Callback` | 02-data-access |
-| When a fake beats a mock (state) | `InMemoryRepository<T>` instead of `Mock<T>` | 03-fake-repository |
-| Exception Handling (disk full) | `ThrowsAsync` | 04-exceptions |
-| Interactions (did it log?) | `Verify`, `Times.Once` / `Never` | 05-verification |
-| Data Scenarios (the clock) | `Setup(...).Returns(now)` | 06-clock |
-| Not My Circus (validation) | `Returns(false)`; the Loose `false` trap, live | 07-validation |
+| Infrastructure Dependencies (the database) | `new Mock<T>`, `.Object`, `ReturnsAsync`, `It.IsAny`, `Callback` | 03-data-access |
+| When a fake beats a mock (state) | `InMemoryRepository<T>` instead of `Mock<T>` | 04-fake-repository |
+| Exception Handling (disk full) | `ThrowsAsync` | 05-exceptions |
+| Interactions (did it log?) | `Verify`, `Times.Once` / `Never` | 06-verification |
+| Data Scenarios (the clock) | `Setup(...).Returns(now)` | 07-clock |
+| Not My Circus (validation) | `Returns(false)`; the Loose `false` trap, live | 09-validation |
 | Annoyance #1: it gets wordy | `MockUtility.CreateInstance` | extras/setup-tax |
 | When not to mock (the adapter) | Real objects | 01-adapter |
 
-The one live moment is the 07 `bool` gotcha, typed into a `prepare-demo.ps1`
+The one live moment is the 09 `bool` gotcha, typed into a `prepare-demo.ps1`
 scratch folder, with code-slide backup. The refactoring demo is Q&A material
 ("how do I do this in a monolith with no DI?"). The deck has a QR code for
 the YouTube playlist mid-talk and again at the close. The deck itself lives
@@ -399,12 +399,12 @@ below is a proposal; Ben hasn't fixed it.
 | Demo | Title as a search question |
 | --- | --- |
 | 01-adapter | How do I unit test code that calls the database? Part 1: should I mock my mapping code? |
-| 02-data-access | How do I unit test code that calls the database? Part 2: mock the repository |
-| 03-fake-repository | Should I mock my repository, or use an in-memory fake? |
-| 04-exceptions | How do I test a catch block I can't trigger? |
-| 05-verification | How do I verify a method was called with Moq? |
-| 06-clock | How do I unit test code that uses `DateTime.Now`? |
-| 07-validation | Why does my Moq mock return false? |
+| 03-data-access | How do I unit test code that calls the database? Part 2: mock the repository |
+| 04-fake-repository | Should I mock my repository, or use an in-memory fake? |
+| 05-exceptions | How do I test a catch block I can't trigger? |
+| 06-verification | How do I verify a method was called with Moq? |
+| 07-clock | How do I unit test code that uses `DateTime.Now`? |
+| 09-validation | Why does my Moq mock return false? |
 | extras/setup-tax | Why are my Moq test fixtures so wordy? |
 | refactoring | How do I unit test code that creates its own dependencies? |
 
@@ -416,9 +416,9 @@ below is a proposal; Ben hasn't fixed it.
   lazily created `SystemUnderTest` property. This is the convention from the
   2014 and 2017 talks and the one the audience will have seen before.
 - **`PersonManagerFixture` is plain Moq in every demo.** It's the file that
-  grows from 02 to 07, so it never changes technique. The `MockUtility`
+  grows from 03 to 09, so it never changes technique. The `MockUtility`
   version of the same tests is `PersonManagerMockUtilityFixture.cs`, and it
-  exists only in `07-validation` (`SystemUnderTest` there is a
+  exists only in `09-validation` (`SystemUnderTest` there is a
   `MockCreationResult<T>`, so `SystemUnderTest.Instance` and
   `SystemUnderTest.GetRequiredMock<T>()` read naturally). Both are full,
   compiling files with identical tests, never a commented-out block.
@@ -453,7 +453,7 @@ below is a proposal; Ben hasn't fixed it.
   compiler's backing field: `private Mock<ILogger> Logger => field ??= new();`,
   `private PersonManager SystemUnderTest => field ??= new PersonManager(Repository.Object);`.
   No `private Mock<ILogger>? _logger;` declarations. A getter that has to
-  configure the object (07's `Validator`, the MockUtility fixture's
+  configure the object (09's `Validator`, the MockUtility fixture's
   `SystemUnderTest`) uses a block body with `if (field == null) { field = ...; }`.
   The integration fixtures keep an explicit constructor because its body sets
   the connection string. Applies to every fixture in the repo.
@@ -465,7 +465,7 @@ below is a proposal; Ben hasn't fixed it.
 - `dotnet test <project>` with no extra switches. `xunit.v3.mtp-v2` passes
   unknown switches such as `--nologo` through to the test host, which then
   exits with code 5 and runs nothing. Run it from inside the stage folder
-  (`cd 04-exceptions/after && dotnet test Benday.MoqDemo.UnitTests`): the
+  (`cd 05-exceptions/after && dotnet test Benday.MoqDemo.UnitTests`): the
   stage's `global.json` holds the `"test": { "runner": ... }` opt-in, and from
   the repo root the .NET 10 SDK errors with "Testing with VSTest target is no
   longer supported".
@@ -479,7 +479,7 @@ below is a proposal; Ben hasn't fixed it.
 - Keep demo code small. Every line on screen costs time; if a method needs
   scrolling it needs splitting.
 - Do not "fix" the deliberate ugliness in `01-adapter/before` or
-  `refactoring/before`, or the deliberate `bool`-default failure in `07`.
+  `refactoring/before`, or the deliberate `bool`-default failure in `09`.
   They are the demo.
 - Commit per demo with a message that names the demo and the test that
   proves the change.

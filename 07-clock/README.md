@@ -21,7 +21,7 @@ clock from it. Then show two test clocks:
 
 ## What changes
 
-**before** is demo 05's `after`, plus the
+**before** is demo 06's `after`, plus the
 `Microsoft.Extensions.TimeProvider.Testing` package in the unit test project.
 
 **after** injects the clock:
@@ -36,7 +36,7 @@ The tests that prove it:
 
 - `SaveAsync_WhenPersonIsNew_SetsCreateDateAndLastModifiedToNow`
 - `SaveAsync_WhenPersonExists_UpdatesLastModifiedButNotCreateDate`: this was
-  `..._DoesNotChangeCreateDate` from demo 02 on. With the clock pinned it can check
+  `..._DoesNotChangeCreateDate` from demo 03 on. With the clock pinned it can check
   `LastModified` too.
 - `SaveAsync_WhenTimeMovesForward_UpdatesLastModified`: `FakeTimeProvider`
   with `Advance(TimeSpan.FromHours(1))` between two saves.

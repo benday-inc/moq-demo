@@ -39,7 +39,7 @@ SQL Server, in the integration test project.
   safety net for the refactor, and it shows the cost the unit tests avoid:
   SQL Server has to be running, and every test pays for a real round trip.
 - The unit test project references Moq. Nothing else: the in-memory fake is
-  demo 03's subject.
+  demo 04's subject.
 
 **after** puts the database behind the interface:
 
@@ -57,7 +57,7 @@ SQL Server, in the integration test project.
 - One behavior fix surfaced by the tests: on an update, the stored record's
   `CreateDate` wins over whatever the caller's `Person` says. Before, the
   adapter copied the caller's `CreateDate` (often `default`) over the real one.
-- The logger and the clock are still created inline. Demos 05 and 06 fix
+- The logger and the clock are still created inline. Demos 06 and 07 fix
   those, which is why the date tests here can only check that the dates were
   set, not what they were set to.
 

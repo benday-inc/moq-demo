@@ -27,7 +27,7 @@ mock returns `default(bool)`, which is `false`. The fix is one
 
 ## What changes
 
-**before** is demo 06's `after`, plus setup the video skips:
+**before** is demo 07's `after`, plus setup the video skips:
 
 - The real rules in `PersonValidator : IValidatorStrategy<Person>` (first
   name, last name, and an email address with an `@`), and

@@ -33,7 +33,7 @@ one adds Id assignment and call tracking.
 
 ## What changes
 
-**before** is demo 02's `after`, plus the `Benday.EfCore.Testing` package in
+**before** is demo 03's `after`, plus the `Benday.EfCore.Testing` package in
 the unit test project.
 
 **after** changes only the tests. No production code changes at all.

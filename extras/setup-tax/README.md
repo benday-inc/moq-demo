@@ -2,7 +2,7 @@
 
 **The question this answers:** Why are my Moq test fixtures so wordy?
 
-This folder is not a stage. It sits outside the `01`-`07` before/after chain
+This folder is not a stage. It sits outside the `01`-`09` before/after chain
 (`prepare-demo.ps1` copies it as-is) and holds the six-dependency example from the
 VST08 talk's slides "Annoyance #1: It Gets Wordy" and "MockUtility: Name Only
 What You Need", so every line on those slides compiles and passes.
